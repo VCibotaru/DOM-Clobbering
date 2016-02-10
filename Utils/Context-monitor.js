@@ -39,6 +39,9 @@ ContextMonitor.prototype = (function () {
         observe: observe
     };
 
+    // starts the context monitor by registering observe() callback to event
+    // 'document-element-inserted'
+    // look here: https://developer.mozilla.org/en-US/docs/Observer_Notifications
     function start() {
         var observerService;
 
@@ -70,6 +73,9 @@ ContextMonitor.prototype = (function () {
         running = false;
     }
 
+    // saves the document's window
+    // registers the events.window events for the window
+    // emits window.created 
     function contextCreated(doc) {
         var win = doc.defaultView;
 
@@ -93,6 +99,7 @@ ContextMonitor.prototype = (function () {
         }
     }
 
+    // calls contextCreated() after the document's root element was created
     function observe(aSubject, aTopic, aData) {
         if (aTopic === events.document.LOAD && aSubject instanceof HTMLDocument) {
             contextCreated(aSubject);

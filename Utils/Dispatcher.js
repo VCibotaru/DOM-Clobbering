@@ -5,6 +5,8 @@ var dispatcher = {
     off: off.bind(null, this),
     emit: emit.bind(null, this)
 }
-
+dispatcher.onWindowCreated = function(callback) {
+    dispatcher.on('window.created', callback);
+}
 exports.dispatcher = dispatcher;
 module.exports = dispatcher;
