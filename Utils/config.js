@@ -10,7 +10,7 @@
 var Config = function() {
 	this.url = require('system').args.slice()[1];
 	this.DEBUG = true;
-	this.elementName = 'querySelector';
+	this.elementName = require('system').args.slice()[2]; 
 };
 
 

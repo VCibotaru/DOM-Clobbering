@@ -16,7 +16,7 @@ var DebuggerWrapper = require('debugger-wrapper').DebuggerWrapper,
  */
 var Tracker = function(win) {
 	this.win = win;
-	this.dbg = new DebuggerWrapper(this);
+	this.dbg = new DebuggerWrapper(this, win);
 	this.elementCreated = false;
 
 
@@ -38,15 +38,15 @@ Tracker.prototype.endCallback = function() {
  * @this Tracker
  */
 Tracker.prototype.isElementCreated = function () {
-	if (this.elementCreated) {
+	if (this.elementCreated === true) {
 		// if the element was created during previous steps just return true
 		return true;
 	}
 	else if (this.win.document.forms[1] !== undefined) {
 		// if the element was created at this step change its name and return true
 		this.elementCreated = true;
-		this.win.document.forms[1].name = config.elementName;
 		return true;
+
 	}
 	return false;
 };

@@ -2,3 +2,5 @@
 .*
 *.log
 docs/*
+*.txt
+Common_names/*
