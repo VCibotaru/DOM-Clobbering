@@ -1,24 +1,23 @@
 /**
  * @module test
  */
- 
+
+var _ = require('underscore');
 /**
  * Represents a test case.
  * @constructor
  * @property {String} description - The description of the test case.
  * @property {Object} result - The correct result of the test case run.
  * @property {Function} code - The code that needs to be run.
- * @property {Function} predicate - The predicate which evaluate the correctness
  * of the obtained results. Takes one parameter: the achieved result. 
  * @property {Function} cleanup - The function which gets called for cleaning 
  * after the test was run.
  */
-var TestCase = function(description, result, code, predicate, cleanup) {
+var TestCase = function(description, code, result, cleanup) {
 	this.description = description;
 	this.code = code;
-	this.predicate = predicate;
-	this.cleanup = cleanup;
 	this.result = result;
+	this.cleanup = cleanup;
 };
 
 /**
@@ -30,7 +29,7 @@ TestCase.prototype.runTest = function() {
 	// run the code and save the achieved result
 	var curResult = this.code();
 	// check whether the test was passed successfully
-	var testPassed = this.predicate(curResult, this.result);
+	var testPassed = _.isEqual(curResult, this.result); 
 	// do the cleanup
 	this.cleanup();
 	return {'passed': testPassed, 'result': curResult};

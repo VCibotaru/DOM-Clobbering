@@ -7,10 +7,13 @@
  * @property {bool} DEBUG - Flag showing if the debug mode is on.
  * @property {string} elementName - The name for clobbering.
 */
+var parseArgs = require('minimist');
 var Config = function() {
-	this.url = require('system').args.slice()[1];
+	this.args = parseArgs(require('system').args.slice(1));
+	this.url = this.args.url;
 	this.DEBUG = true;
-	this.elementName = require('system').args.slice()[2]; 
+	this.elementName = this.args.tainted_name;
+	this.testMode = this.args.test;
 };
 
 

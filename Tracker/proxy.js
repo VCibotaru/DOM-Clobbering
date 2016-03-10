@@ -32,7 +32,7 @@ var ProxyStorage = function() {
 	 * @return boolean
 	 */
 	ProxyStorage.prototype.isObjectTainted = function(obj) {
-		return obj in this.tainted;
+		return this.tainted.indexOf(obj) !== -1;
 	};
 
 	/**
@@ -81,7 +81,7 @@ var HandlerFactory = function(customActions) {
 					 return function(){return 'Tainted Proxy Object';};
 				 }
 				 if (name === 'valueOf') {
-					 return target.toString();
+					 return target.toString;
 				 }
 				 let objectName = target[objectNameKey] + '.' + name;
 				 let actions = {
@@ -120,9 +120,10 @@ var ProxyFactory = function(objectConstructor, customActions) {
 		let handler = HandlerFactory(customActions);
 		// do the objectWrapper initialization
 		objectWrapper[objectNameKey] = name;
-		storage.addTaintedObject(objectWrapper);
 		//TODO: add some more custom fields initialization
-		return new Proxy(objectWrapper, handler);
+		let pr = new Proxy(objectWrapper, handler);
+		storage.addTaintedObject(pr);
+		return pr; 
 	};
 	return proxyBuilder;
 };
