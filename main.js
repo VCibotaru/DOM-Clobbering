@@ -13,6 +13,7 @@ webpage.onConsoleMessage = function(message, line, file) {
 
 if (config.testMode === true) {
 	test.doTest();
+	slimer.exit();
 }
 else {
 	dispatcher.onWindowCreated(function(win) {

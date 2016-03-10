@@ -24,7 +24,17 @@ var proxyPropagationTest = new TestCase(
 		proxy.storage.clearTaintedObjects.bind(proxy.storage)
 );
 
+var proxyReassignmentTest = new TestCase(
+		'Proxy Reassignment',
+		function () {
+			var obj = {'foo': 'bar'};
+			var pr = proxy.ObjectProxy(obj, 'base');
+			pr = 'asd';
+			return proxy.storage.isObjectTainted(pr);
+		},
+		false,
+		proxy.storage.clearTaintedObjects.bind(proxy.storage)
+);
 
-var tests = [proxyCreationTest, proxyPropagationTest];
-exports.tests = tests;
+exports.tests = [proxyCreationTest, proxyPropagationTest, proxyReassignmentTest];
 exports.testSuite = 'Basic proxy creation and propagation';

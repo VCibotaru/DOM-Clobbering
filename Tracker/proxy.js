@@ -1,8 +1,18 @@
 /**
  * @module proxy
  */
-var stringValueKey = '__string_value_key';
-var objectNameKey = '__object_descriptor_key';
+
+// proxy[stringValueKey] == the string value of the wrapped object
+var stringValueKey = '__string_value__';
+
+// proxy[objectNameKey] == the string identifier assigned by the tainting
+// system to the wrapped object
+
+var objectNameKey = '__object_name__';
+
+// proxy[untaintedObjectNamesKey] == the set of the properties of the object
+// that are not tainted (e.g., they were assigned after the initial taint of the object)
+var untaintedObjectNamesKey = '__untainted_objects__'; 
 
 /**
  * A class for storing the results of the tainting.
@@ -73,9 +83,12 @@ var HandlerFactory = function(customActions) {
 				 if (name in customActions) {
 					 return customActions[name]();
 				 }
-				 // this property corresponds to the name of object given by the tainting system
+				 // the following properties correspond to metadata stored on object
 				 if (name === objectNameKey) {
 					 return target[objectNameKey];
+				 }
+				 if (name == untaintedObjectNamesKey) {
+					 return target[untaintedObjectNamesKey];
 				 }
 				 if (name === 'toString') {
 					 return function(){return 'Tainted Proxy Object';};
@@ -83,13 +96,21 @@ var HandlerFactory = function(customActions) {
 				 if (name === 'valueOf') {
 					 return target.toString;
 				 }
+				 // the following properties correspond to object's data
+
+				 // if target[name] is untainted then return it
+				 if (target[untaintedObjectNamesKey].has(name)) {
+					 return target[name];
+				 }
+				 // else wrap it in a proxy, and return the proxy
 				 let objectName = target[objectNameKey] + '.' + name;
 				 let actions = {
 					 'string': function() {return StringProxy(target[name], objectName);},
 					 'object': function() {return ObjectProxy(target[name], objectName);},
 					 'undefined': function() {return undefined;},
 					 'number': function() {return NumberProxy(target[name], objectName);},
-					 // boolean
+					 'boolean': function() {return BooleanProxy(target[name], objectName);},
+					 // TODO:
 					 // null
 					 // function
 				 };
@@ -98,7 +119,18 @@ var HandlerFactory = function(customActions) {
 				 if (type in actions) {
 					 return actions[type]();
 				 }
-				 throw 'Unknown type in BaseHandler.get()';
+				 throw 'Unknown type in BaseHandler.get(): ' + type;
+			 },
+		set: function(target, property, value, receiver) {
+				 if (storage.isObjectTainted(value) === false) {
+					 // if value is not tainted
+					 target[untaintedObjectNamesKey].add(property);
+				 }
+				 else {
+					 // if value is tainted
+					 target[untaintedObjectNamesKey].delete(property);
+				 }
+				 target[property] = value;
 			 }
 	};
 	return handler;
@@ -118,8 +150,11 @@ var ProxyFactory = function(objectConstructor, customActions) {
 	let proxyBuilder = function(object, name) {
 		let objectWrapper = objectConstructor(object);
 		let handler = HandlerFactory(customActions);
+
 		// do the objectWrapper initialization
 		objectWrapper[objectNameKey] = name;
+		objectWrapper[untaintedObjectNamesKey] = new Set();
+
 		//TODO: add some more custom fields initialization
 		let pr = new Proxy(objectWrapper, handler);
 		storage.addTaintedObject(pr);
@@ -139,6 +174,7 @@ var StringProxy = ProxyFactory(
 		function(string) {return new String(string);},
 		{}
 		);
+
 /**
  * A constructor of proxies for values of the Object type.
  * @function ObjectProxy
@@ -146,13 +182,19 @@ var StringProxy = ProxyFactory(
 var ObjectProxy = ProxyFactory(
 		function(object) {return object;},
 		{}
-		);
+);
 
 var NumberProxy = ProxyFactory(
 		function(number) {return new Number(number);},
 		{}
 		// TODO: work on number here
-		);
+);
+
+var BooleanProxy = ProxyFactory(
+		function(bool) {return new Boolean(bool);},
+		{}
+		// TODO: work on bools here
+);
 
 // the code which if evaled import this module
 var importCode = "" +
@@ -167,5 +209,11 @@ var importCode = "" +
 
 exports.StringProxy = StringProxy;
 exports.ObjectProxy = ObjectProxy;
+exports.NumberProxy = NumberProxy;
+exports.BooleanProxy = BooleanProxy;
 exports.storage = storage;
 exports.importCode = importCode;
+
+exports.stringValueKey = stringValueKey;
+exports.objectNameKey = objectNameKey;
+exports.untaintedObjectNamesKey = untaintedObjectNamesKey;
