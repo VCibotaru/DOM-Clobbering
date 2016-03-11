@@ -68,6 +68,29 @@ var ProxyStorage = function() {
 var storage = new ProxyStorage();
 
 /**
+ * Returns a proxy constructor corresponding to object's type.
+ * @function getProxyConstructorForObject
+ * @param {Object} obj - The object.
+ * @return A constructor or a trivial function that returns undefined.
+ */
+var getProxyConstructorForObject = function(obj) {
+	let actions = {
+		'string': StringProxy,
+		'object': ObjectProxy,
+		'undefined': function() {return undefined;},
+		'number': NumberProxy,
+		'boolean': BooleanProxy,
+		'null': function() {return null;},
+		'function': FunctionProxy,
+	};
+	let type = typeof obj;
+	if (type in actions) {
+		return actions[type];
+	}
+	throw 'Unknown type in BaseHandler.get(): ' + type;
+};
+
+/**
  * Creates a handler for a proxy.
  * @function HandlerFactory
  * @param {Object} customActions - The object that stores key-value pairs of form
@@ -77,6 +100,7 @@ var storage = new ProxyStorage();
  * @see {@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy/handler | handlers}
  */
 var HandlerFactory = function(customActions) {
+
 	let handler = {
 		get: function(target, name, receiver) {
 				 // call the custom action if specified
@@ -104,22 +128,9 @@ var HandlerFactory = function(customActions) {
 				 }
 				 // else wrap it in a proxy, and return the proxy
 				 let objectName = target[objectNameKey] + '.' + name;
-				 let actions = {
-					 'string': function() {return StringProxy(target[name], objectName);},
-					 'object': function() {return ObjectProxy(target[name], objectName);},
-					 'undefined': function() {return undefined;},
-					 'number': function() {return NumberProxy(target[name], objectName);},
-					 'boolean': function() {return BooleanProxy(target[name], objectName);},
-					 // TODO:
-					 // null
-					 // function
-				 };
 				 // return different proxies depending on the property type
-				 let type = typeof target[name];
-				 if (type in actions) {
-					 return actions[type]();
-				 }
-				 throw 'Unknown type in BaseHandler.get(): ' + type;
+				 let proxyConstructor = getProxyConstructorForObject(target[name]);
+				 return proxyConstructor(target[name], objectName);
 			 },
 		set: function(target, property, value, receiver) {
 				 if (storage.isObjectTainted(value) === false) {
@@ -131,7 +142,21 @@ var HandlerFactory = function(customActions) {
 					 target[untaintedObjectNamesKey].delete(property);
 				 }
 				 target[property] = value;
-			 }
+			 },
+		apply: function(target, thisArg, argsList) {
+				   let result = target.apply(thisArg, argsList);
+				   // HERE we always taint the result.
+				   // However, there is another option: to not do this and let the 
+				   // code itself taint the result or not.
+				   let proxyConstructor = getProxyConstructorForObject(result);
+				   // TODO:
+				   // let objName = `${target[objectNameKey]}.apply(${thisArg},${argsList})`;
+				   let objName = `${target[objectNameKey]}.apply()`;
+				   console.log(objName);
+				   let proxy = proxyConstructor(result, objName);
+				   return proxy;
+			   }			
+
 	};
 	return handler;
 };
@@ -196,6 +221,10 @@ var BooleanProxy = ProxyFactory(
 		// TODO: work on bools here
 );
 
+var FunctionProxy = ProxyFactory(
+		function(func) {return func;},
+		{}
+);
 // the code which if evaled import this module
 var importCode = "" +
 "var stringValueKey = '__string_value_key';" + 

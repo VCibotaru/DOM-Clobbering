@@ -130,8 +130,8 @@ var test10 = new TestCase(
 		function() {
 			let TestObject = function(name) {
 				this.name = name;
-				this.sayHello = function() {
-					return 'Hello from: ' + this.name;
+				TestObject.prototype.sayHello = function() {
+					return 'Hello from: ' + toString(this.name);
 				};
 			};
 			let pr = new proxy.StringProxy('name');
