@@ -19,7 +19,7 @@ var untaintedObjectNamesKey = '__untainted_objects__';
  * @constructor
  */
 var ProxyStorage = function() {
-	this.tainted = [];
+	this.tainted = Set(); 
 	// all the following methods are included directly in the 
 	// constructor to allow a more easy obtaining of the 
 	// function's code as a string
@@ -31,7 +31,7 @@ var ProxyStorage = function() {
 	 * @this ProxyStorage
 	 */
 	ProxyStorage.prototype.addTaintedObject = function(obj) {
-		this.tainted.push(obj);
+		this.tainted.add(obj);
 	};
 
 	/**
@@ -42,7 +42,7 @@ var ProxyStorage = function() {
 	 * @return boolean
 	 */
 	ProxyStorage.prototype.isObjectTainted = function(obj) {
-		return this.tainted.indexOf(obj) !== -1;
+		return this.tainted.has(obj);
 	};
 
 	/**
@@ -52,7 +52,8 @@ var ProxyStorage = function() {
 	 * @return Array
 	 */
 	ProxyStorage.prototype.getTaintedNames = function() {
-		return this.tainted.map(function(obj) {return obj[objectNameKey];});
+		let tmp = Array.from(this.tainted);
+		return tmp.map(function(obj) {return obj[objectNameKey];});
 	};
 
 	/**
@@ -61,7 +62,7 @@ var ProxyStorage = function() {
 	 * @this ProxyStorage
 	 */
 	ProxyStorage.prototype.clearTaintedObjects = function() {
-		this.tainted = [];
+		this.tainted = Set();
 	};
 };
 
@@ -152,7 +153,6 @@ var HandlerFactory = function(customActions) {
 				   // TODO:
 				   // let objName = `${target[objectNameKey]}.apply(${thisArg},${argsList})`;
 				   let objName = `${target[objectNameKey]}.apply()`;
-				   console.log(objName);
 				   let proxy = proxyConstructor(result, objName);
 				   return proxy;
 			   }			
