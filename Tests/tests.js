@@ -27,7 +27,13 @@ var TestCase = function(description, code, result, cleanup) {
  */
 TestCase.prototype.runTest = function() {
 	// run the code and save the achieved result
-	var curResult = this.code();
+	var curResult; 
+	try {
+		curResult = this.code(); 
+	}
+	catch(e) {
+		curResult = 'exception';
+	}
 	// check whether the test was passed successfully
 	var testPassed = _.isEqual(curResult, this.result); 
 	// do the cleanup
