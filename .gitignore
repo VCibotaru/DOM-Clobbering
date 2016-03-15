@@ -4,3 +4,5 @@
 docs/*
 *.txt
 Common_names/*
+Utils/node_modules/*
+docs-conf.json

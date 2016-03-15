@@ -5,7 +5,7 @@ var booleanLiteralTest = new TestCase(
 		'Boolean Literal Test',
 		function() {
 			var pr = proxy.BooleanProxy(true, 'base');
-			return proxy.storage.isObjectTainted(pr);
+			return proxy.isObjectTainted(pr);
 		},
 		true,	
 		proxy.storage.clearTaintedObjects.bind(proxy.storage)
@@ -16,7 +16,7 @@ var numberLiteralTest = new TestCase(
 		'Number Literal Test',
 		function() {
 			var pr = proxy.NumberProxy(1, 'base');
-			return proxy.storage.isObjectTainted(pr);
+			return proxy.isObjectTainted(pr);
 		},
 		true,	
 		proxy.storage.clearTaintedObjects.bind(proxy.storage)
@@ -27,7 +27,7 @@ var stringLiteralTest = new TestCase(
 		'String Literal Test',
 		function() {
 			var pr = proxy.StringProxy('asd', 'base');
-			return proxy.storage.isObjectTainted(pr);
+			return proxy.isObjectTainted(pr);
 		},
 		true,	
 		proxy.storage.clearTaintedObjects.bind(proxy.storage)

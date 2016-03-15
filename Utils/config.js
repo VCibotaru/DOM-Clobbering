@@ -1,5 +1,7 @@
 /** @module config **/
 
+
+var parseArgs = require('minimist');
 /**
  * Represents a configuration of the current launch.
  * @constructor
@@ -7,7 +9,6 @@
  * @property {bool} DEBUG - Flag showing if the debug mode is on.
  * @property {string} elementName - The name for clobbering.
 */
-var parseArgs = require('minimist');
 var Config = function() {
 	this.args = parseArgs(require('system').args.slice(1));
 	this.url = this.args.url;

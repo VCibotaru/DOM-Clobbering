@@ -3,7 +3,8 @@ var logger = require('logger');
 
 var splitLineLength = 50;
 var doTest = function() {
-	let testNames = ['./proxy_creation', './literals', './object_operations', './numbers'];
+	// let testNames = ['./proxy_creation', './literals', './object_operations', './numbers'];
+	let testNames = ['./rewriting'];
 	let testNumber = 1;
 	for (let i = 0 ; i < testNames.length; i++) {
 		let tests = require(testNames[i]).tests;

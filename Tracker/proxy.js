@@ -14,6 +14,9 @@ var objectNameKey = '__object_name__';
 // that are not tainted (e.g., they were assigned after the initial taint of the object)
 var untaintedObjectNamesKey = '__untainted_objects__'; 
 
+// proxy[proxyTypeofKey] == the type of the wrapped object (string, object, ...) 
+var proxyTypeofKey = '__proxy_type__';
+
 /**
  * A class for storing the results of the tainting.
  * @constructor
@@ -105,21 +108,20 @@ var HandlerFactory = function(customActions) {
 	let handler = {
 		get: function(target, name, receiver) {
 				 // call the custom action if specified
-				 if (name in customActions) {
+				 if (customActions.hasOwnProperty(name)) {
 					 return customActions[name]();
 				 }
 				 // the following properties correspond to metadata stored on object
-				 if (name === objectNameKey) {
-					 return target[objectNameKey];
-				 }
-				 if (name == untaintedObjectNamesKey) {
-					 return target[untaintedObjectNamesKey];
+				 let metanames = [proxyTypeofKey, objectNameKey, untaintedObjectNamesKey];
+				 if (metanames.indexOf(name) !== -1) {
+					 return target[name];
 				 }
 				 if (name === 'toString') {
 					 return function(){return 'Tainted Proxy Object';};
 				 }
 				 if (name === 'valueOf') {
-					 return target.toString;
+					 let value = target.valueOf();
+					 return function() {return value;};
 				 }
 				 // the following properties correspond to object's data
 
@@ -179,6 +181,7 @@ var ProxyFactory = function(objectConstructor, customActions) {
 		// do the objectWrapper initialization
 		objectWrapper[objectNameKey] = name;
 		objectWrapper[untaintedObjectNamesKey] = new Set();
+		objectWrapper[proxyTypeofKey] = typeof object;
 
 		//TODO: add some more custom fields initialization
 		let pr = new Proxy(objectWrapper, handler);
@@ -235,14 +238,20 @@ var importCode = "" +
 "var ProxyFactory = " + ProxyFactory + ";" +
 "var StringProxy = ProxyFactory(function(string){return new String(string);}, {});" +
 "var ObjectProxy = ProxyFactory(function(object){return object;}, {}); "; 
+// TODO: add all other proxies here
+// TODO: add isObjectTainted here
 
 exports.StringProxy = StringProxy;
 exports.ObjectProxy = ObjectProxy;
 exports.NumberProxy = NumberProxy;
 exports.BooleanProxy = BooleanProxy;
+exports.FunctionProxy = FunctionProxy;
 exports.storage = storage;
 exports.importCode = importCode;
 
 exports.stringValueKey = stringValueKey;
 exports.objectNameKey = objectNameKey;
 exports.untaintedObjectNamesKey = untaintedObjectNamesKey;
+exports.proxyTypeofKey = proxyTypeofKey;
+
+exports.isObjectTainted = ProxyStorage.prototype.isObjectTainted.bind(storage);

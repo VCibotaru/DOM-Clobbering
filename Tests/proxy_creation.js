@@ -18,7 +18,7 @@ var proxyPropagationTest = new TestCase(
 			var obj = {'foo': 'bar'};
 			var pr = proxy.ObjectProxy(obj, 'base');
 			var x = pr;
-			return proxy.storage.isObjectTainted(x);
+			return proxy.isObjectTainted(x);
 		},
 		true,
 		proxy.storage.clearTaintedObjects.bind(proxy.storage)
@@ -30,7 +30,7 @@ var proxyReassignmentTest = new TestCase(
 			var obj = {'foo': 'bar'};
 			var pr = proxy.ObjectProxy(obj, 'base');
 			pr = 'asd';
-			return proxy.storage.isObjectTainted(pr);
+			return proxy.isObjectTainted(pr);
 		},
 		false,
 		proxy.storage.clearTaintedObjects.bind(proxy.storage)

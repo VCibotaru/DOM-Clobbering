@@ -7,7 +7,7 @@ var creationTest = new TestCase(
 		'Number Proxy creation',
 		function() {
 			let x = proxy.NumberProxy(1, 'x');
-			return proxy.storage.isObjectTainted(x);
+			return proxy.isObjectTainted(x);
 		},
 		true,
 		cleanup
@@ -30,7 +30,7 @@ var UnaryOperationTestFunctionFactory = function(op, init, res) {
 	let func = function() {
 		let x = proxy.NumberProxy(init, 'x');
 		let y = op(x);
-		return proxy.storage.isObjectTainted(y) && (y === res);
+		return proxy.isObjectTainted(y) && (y === res);
 	};
 	return func;
 };
@@ -44,12 +44,17 @@ var BinaryOperationTestFunctionFactory = function(op, initX, initY, XY, YX) {
 			let yx = op(y, x); 
 			let xz = op(x, z);
 			let zx = op(z, x);
+			// console.log(x);
+			// console.log(y);
+			// console.log(xy);
+			// console.log(xz);
+			// console.log(xy === XY);
 			// all of following must be true
 			let res = [
-				proxy.storage.isObjectTainted(xy), 
-				proxy.storage.isObjectTainted(yx),
-				proxy.storage.isObjectTainted(xz),
-				proxy.storage.isObjectTainted(zx),
+				// proxy.isObjectTainted(xy), 
+				// proxy.isObjectTainted(yx),
+				// proxy.isObjectTainted(xz),
+				// proxy.isObjectTainted(zx),
 				xy == XY, xy === XY, yx == YX, yx === YX,
 				xz == XY, xz === XY, zx == YX, zx === YX,
 			];
@@ -76,7 +81,7 @@ var subtraction = OperationTestCaseFactory(
 
 var multiplication = OperationTestCaseFactory(
 		'Numbers multiplication',
-		BinaryOperationTestFunctionFactory((a, b) => a*b, 1, 2, 1, 2)
+		BinaryOperationTestFunctionFactory((a, b) => a*b, 1, 2, 2, 2)
 );
 
 var division = OperationTestCaseFactory(
@@ -133,7 +138,7 @@ var bitwiseOr = new OperationTestCaseFactory(
 
 var bitwiseXor = new OperationTestCaseFactory(
 		'Numbers Bitwise Xor',
-		BinaryOperationTestFunctionFactory((a, b) => a^b, 0xFA, 0xAF, 0, 0)
+		BinaryOperationTestFunctionFactory((a, b) => a^b, 0xFA, 0xAF, 0x55, 0x55)
 );
 
 var bitwiseNegation = new OperationTestCaseFactory(
@@ -148,7 +153,7 @@ var bitwiseShiftLeft = new OperationTestCaseFactory(
 
 var bitwiseShiftRight = new OperationTestCaseFactory(
 		'Numbers Bitwise Shift Right',
-		BinaryOperationTestFunctionFactory((a, b) => a << b, 16, 2, 131072, 64)
+		BinaryOperationTestFunctionFactory((a, b) => a >> b, 2, 16, 0, 4)
 );
 
 // logical operations
@@ -209,9 +214,20 @@ var greaterOrEqualThan = new OperationTestCaseFactory(
 		BinaryOperationTestFunctionFactory((a, b) => (a >= b), 1, 1, true, true)
 );
 
+var valueOfTest = new TestCase(
+		'Numbers valueOf()',
+		function() {
+			let x = proxy.NumberProxy(1);
+			let y = x.valueOf();
+			return y;
+		},
+		1,
+		cleanup
+);
 exports.tests = [
 	creationTest,
 	typeofTest, 
+	valueOfTest,
 	// comparison
 	doubleEquality,
 	tripleEquality,

@@ -22,7 +22,7 @@ var test2 = new TestCase(
 			let pr = proxy.StringProxy('foo');
 			obj.name = pr;
 			let y = obj.name;
-			return proxy.storage.isObjectTainted(y);
+			return proxy.isObjectTainted(y);
 		},
 		true,
 		cleanup
@@ -35,7 +35,7 @@ var test3 = new TestCase(
 			pr.x = 'foo';
 			let y = pr.x;
 			var set = pr[proxy.untaintedObjectNamesKey];
-			return proxy.storage.isObjectTainted(y);
+			return proxy.isObjectTainted(y);
 		},
 		false,
 		cleanup
@@ -48,7 +48,7 @@ var test4 = new TestCase(
 			let str = proxy.StringProxy('foo', 'str');
 			pr.str = str;
 			let x = pr.str;
-			return proxy.storage.isObjectTainted(x);
+			return proxy.isObjectTainted(x);
 		},
 		true,
 		cleanup
@@ -60,7 +60,7 @@ var test5 = new TestCase(
 			let pr = proxy.ObjectProxy({'foo': 'bar'}, 'base');
 			pr.foo = 'asd';
 			let x = pr.foo;
-			return proxy.storage.isObjectTainted(x);
+			return proxy.isObjectTainted(x);
 		},
 		false,
 		cleanup
@@ -73,7 +73,7 @@ var test6 = new TestCase(
 			pr.foo = 'foo';
 			pr.foo = proxy.StringProxy('bar');
 			let x = pr.foo;
-			return proxy.storage.isObjectTainted(x);
+			return proxy.isObjectTainted(x);
 		},
 		true,
 		cleanup
@@ -87,7 +87,7 @@ var test7 = new TestCase(
 			obj.foo = pr;
 			obj.foo = 'foo';
 			let x = obj.foo;
-			return proxy.storage.isObjectTainted(x);
+			return proxy.isObjectTainted(x);
 		},
 		false,
 		cleanup
@@ -100,7 +100,7 @@ var test8 = new TestCase(
 			let pr = new proxy.StringProxy('bar');
 			obj.foo = pr;
 			let x = obj.foo;
-			return proxy.storage.isObjectTainted(x);
+			return proxy.isObjectTainted(x);
 		},
 		true,
 		cleanup
@@ -118,7 +118,7 @@ var test9 = new TestCase(
 			let pr = new proxy.StringProxy('name');
 			let obj = new TestObject(pr);
 			let x = TestObject.prototype.sayHello.call(obj);
-			return proxy.storage.isObjectTainted(x);
+			return proxy.isObjectTainted(x);
 		},
 		true,
 		cleanup
@@ -137,7 +137,7 @@ var test10 = new TestCase(
 			let pr = new proxy.StringProxy('name');
 			let obj = proxy.ObjectProxy(new TestObject(pr), 'base');
 			let x = obj.sayHello();
-			return proxy.storage.isObjectTainted(x);
+			return proxy.isObjectTainted(x);
 		},
 		true,
 		cleanup

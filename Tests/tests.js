@@ -27,11 +27,12 @@ var TestCase = function(description, code, result, cleanup) {
  */
 TestCase.prototype.runTest = function() {
 	// run the code and save the achieved result
-	var curResult; 
+	var curResult;
 	try {
 		curResult = this.code(); 
 	}
 	catch(e) {
+		console.log('Got Exception: ' + e);
 		curResult = 'exception';
 	}
 	// check whether the test was passed successfully
