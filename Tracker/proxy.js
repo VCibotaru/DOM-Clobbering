@@ -1,4 +1,6 @@
 /**
+ * This module contains different proxies objects.
+ * See {@link https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/Proxy}
  * @module proxy
  */
 
@@ -17,6 +19,8 @@ var untaintedObjectNamesKey = '__untainted_objects__';
 // proxy[wrappedObjectKey] == the object wrapped by the proxy
 var wrappedObjectKey = '__wrapped_object__';
 
+// proxy[proxyTypeKey] == the type of the proxy (e.g., StringProxy, NumberProxy, ...)
+var proxyTypeKey = '__proxy_type__';
 /**
  * A class for storing the results of the tainting.
  * @constructor
@@ -95,6 +99,20 @@ var getProxyConstructorForObject = function(obj) {
 };
 
 /**
+ * Creates a proxy of one of the special types (StringProxy, ...)
+ * depending on the object's type.
+ * @function
+ * @param {Object} obj - The object to be wrapped with a proxy.
+ * @param {String} name - See proxy[objectNameKey].
+ * @return - A proxy object.
+ */
+var buildProxy = function(obj, name) {
+	// return different proxies depending on the object type
+	let proxyConstructor = getProxyConstructorForObject(obj);
+	return proxyConstructor(obj, name);
+};
+
+/**
  * Creates a handler for a proxy.
  * @function HandlerFactory
  * @param {Object} customActions - The object that stores key-value pairs of form
@@ -130,10 +148,8 @@ var HandlerFactory = function(customActions) {
 					 return target[name];
 				 }
 				 // else wrap it in a proxy, and return the proxy
-				 let objectName = target[objectNameKey] + '.' + name;
-				 // return different proxies depending on the property type
-				 let proxyConstructor = getProxyConstructorForObject(target[name]);
-				 return proxyConstructor(target[name], objectName);
+				 let newName = target[objectNameKey] + '.' + name;
+				 return buildProxy(target[name], newName);
 			 },
 		set: function(target, property, value, receiver) {
 				 if (storage.isObjectTainted(value) === false) {
@@ -200,7 +216,7 @@ var ProxyFactory = function(objectConstructor, customActions) {
 var StringProxy = ProxyFactory(
 		// TODO: change the toString implementation to make eval() work
 		function(string) {return new String(string);},
-		{}
+		{proxyTypeKey: 'string'}
 		);
 
 /**
@@ -209,25 +225,54 @@ var StringProxy = ProxyFactory(
  */
 var ObjectProxy = ProxyFactory(
 		function(object) {return object;},
-		{}
+		{proxyTypeKey: 'object'}
 );
 
+/**
+ * A constructor of proxies for number primitive values.
+ * It wraps the primitive value inside a Number object.
+ * This is needed because the proxies can't be used with primitive values.
+ * @function NumberProxy.
+ */
 var NumberProxy = ProxyFactory(
 		function(number) {return new Number(number);},
-		{}
+		{proxyTypeKey: 'number'}
 		// TODO: work on number here
 );
 
+/**
+ * A constructor of proxies for boolean primitive values.
+ * It wraps the primitive value inside a Boolean object.
+ * This is needed because the proxies can't be used with primitive values.
+ * @function BooleanProxy.
+ */
 var BooleanProxy = ProxyFactory(
 		function(bool) {return new Boolean(bool);},
-		{}
+		{proxyTypeKey: 'boolean'}
 		// TODO: work on bools here
 );
 
 var FunctionProxy = ProxyFactory(
 		function(func) {return func;},
-		{}
+		{proxyTypeKey: 'function'}
 );
+
+/*
+ * Return the wrapped object from a proxy.
+ * If the proxy is wrapped around a primitive value then it returns the primitive value.
+ * @function
+ * @param {proxy} pr - the proxy
+ * @return The wrapped object or value. 
+ */
+var getWrappedObject = function(pr) {
+	let isPrimitive = (['string', 'number', 'boolean'].indexOf(pr[proxyTypeKey]) !== -1);
+	if (isPrimitive === false) {
+		return pr[wrappedObjectKey];
+	}
+	// if proxy wraps an object that wraps a primitive value then return the value
+	return pr[wrappedObjectKey].valueOf();
+};
+
 // the code which if evaled import this module
 var importCode = "" +
 "var stringValueKey = '__string_value_key';" + 
@@ -253,5 +298,8 @@ exports.stringValueKey = stringValueKey;
 exports.objectNameKey = objectNameKey;
 exports.untaintedObjectNamesKey = untaintedObjectNamesKey;
 exports.wrappedObjectKey = wrappedObjectKey;
+exports.proxyTypeKey = proxyTypeKey;
 
+exports.getWrappedObject = getWrappedObject;
 exports.isObjectTainted = ProxyStorage.prototype.isObjectTainted.bind(storage);
+exports.buildProxy = buildProxy;

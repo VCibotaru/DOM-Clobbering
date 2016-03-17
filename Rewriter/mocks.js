@@ -21,7 +21,9 @@ var isUnaryOperator = require('replacer').isUnaryOperator;
 var UnaryOperationMockFactory = function(op) {
 	let resultFunc = function(obj) {
 		if (proxy.isObjectTainted(obj) === true) {
-			obj = obj[proxy.wrappedObjectKey];
+			obj = proxy.getWrappedObject(obj);
+			// console.log(obj + ' : ' + typeof obj);
+			return proxy.buildProxy(op(obj), 'new_obj_from_op:_' + op);
 		}
 		return op(obj);
 	};
@@ -36,11 +38,16 @@ var UnaryOperationMockFactory = function(op) {
  */
 var BinaryOperationMockFactory = function(op) {
 	let resultFunc = function(left, right) {
-		if (proxy.isObjectTainted(left) === true) {
-			left = left[proxy.wrappedObjectKey];
+		let l = proxy.isObjectTainted(left);
+		let r = proxy.isObjectTainted(right);
+		if (l === true) {
+			left = proxy.getWrappedObject(left); 
 		}
-		if (proxy.isObjectTainted(right) === true) {
-			right = right[proxy.wrappedObjectKey];
+		if (r === true) {
+			right = proxy.getWrappedObject(right); 
+		}
+		if (l === true || r === true) {
+			return proxy.buildProxy(op(left,right), 'new_obj_from_op:_' + op); 
 		}
 		return op(left, right);
 	};

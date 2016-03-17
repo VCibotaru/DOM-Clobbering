@@ -1,7 +1,10 @@
 var TestCase = require('./tests').TestCase;
 var proxy = require('proxy');
-
+var rewrite = require('rewriter').rewrite;
+var replacerNames = require('replacer').replacerNames;
 var cleanup = proxy.storage.clearTaintedObjects.bind(proxy.storage);
+
+require('mocks').mapMocksToObject(this);
 
 var creationTest = new TestCase(
 		'Number Proxy creation',
@@ -13,51 +16,68 @@ var creationTest = new TestCase(
 		cleanup
 );
 
-var typeofTest = new TestCase(
-		'Number Proxy typeof operator',
-		function() {
-			let x = proxy.NumberProxy(1, 'x');
-			return typeof x;
-		},
-		'number',
-		cleanup
-);
-
+// some very dirty hacks!!!
+var lambdaToFunc = function(lambda) {
+	let funcCode = 'let l = ' + lambda + ' return l(a,b);';
+	return Function('a', 'b', funcCode);
+};
 
 // following are just some shortenings
 
 var UnaryOperationTestFunctionFactory = function(op, init, res) {
 	let func = function() {
+		let newOp = lambdaToFunc(rewrite(op.toString()));
 		let x = proxy.NumberProxy(init, 'x');
-		let y = op(x);
-		return proxy.isObjectTainted(y) && (y === res);
+		let y = newOp(x);
+		// console.log(x + ' ' + typeof x);
+		// console.log(y + ' ' + typeof y);
+		require('mocks').mapMocksToObject(this);
+		let te = this[replacerNames['===']]; // triple equal mock
+		let de = this[replacerNames['==']]; // double equal mock
+		res = [proxy.isObjectTainted(y), te(res, y), te(res, y)];
+		res = res.map((a) => a.valueOf());
+		return res.reduce((a,b) => a && b, true);
 	};
 	return func;
 };
 
 var BinaryOperationTestFunctionFactory = function(op, initX, initY, XY, YX) {
 	let func = function() {
+			let newOp = lambdaToFunc(rewrite(op.toString()));
 			let x = proxy.NumberProxy(initX, 'x');
 			let y = proxy.NumberProxy(initY, 'y');
 			let z = initY;
-			let xy = op(x, y); 
-			let yx = op(y, x); 
-			let xz = op(x, z);
-			let zx = op(z, x);
-			// console.log(x);
-			// console.log(y);
-			// console.log(xy);
-			// console.log(xz);
-			// console.log(xy === XY);
+			let xy = newOp(x, y); 
+			let yx = newOp(y, x); 
+			let xz = newOp(x, z);
+			let zx = newOp(z, x);
+			// console.log('x:' + x);
+			// console.log('y:' + y);
+			// console.log('z:' + z);
+			// console.log('xy:' + xy + ' ' + XY);
+			// console.log('yx:' + yx + ' ' + YX);
+			// console.log('xz:' + xz + ' ' + XY);
+			// console.log('zx:' + zx + ' ' + YX);
+			require('mocks').mapMocksToObject(this);
+			let te = this[replacerNames['===']]; // triple equal mock
+			let de = this[replacerNames['==']]; // double equal mock
 			// all of following must be true
 			let res = [
-				// proxy.isObjectTainted(xy), 
-				// proxy.isObjectTainted(yx),
-				// proxy.isObjectTainted(xz),
-				// proxy.isObjectTainted(zx),
-				xy == XY, xy === XY, yx == YX, yx === YX,
-				xz == XY, xz === XY, zx == YX, zx === YX,
+				proxy.isObjectTainted(xy), 
+				proxy.isObjectTainted(yx),
+				proxy.isObjectTainted(xz),
+				proxy.isObjectTainted(zx),
+				de(xy, XY),
+			   	te(xy, XY), 
+				de(yx, YX),
+				te(yx, YX),
+				de(xz, XY),
+				te(xz, XY), 
+				de(zx, YX),
+				te(zx, YX),
 			];
+			res = res.map((a) => a.valueOf());
+			// console.log(res);
 			return res.reduce((a,b) => a && b, true);
 	};
 	return func;
@@ -94,122 +114,122 @@ var modulus = OperationTestCaseFactory(
 		BinaryOperationTestFunctionFactory((a, b) => a%b, 1, 2, 1, 0)
 );
 
-var unaryPlus = new OperationTestCaseFactory( 
+var unaryPlus = OperationTestCaseFactory( 
 		'Numbers Unary Plus',
 		UnaryOperationTestFunctionFactory((a) => +a, 1, 1)
 );
 
-var unaryMinus = new OperationTestCaseFactory( 
+var unaryMinus = OperationTestCaseFactory( 
 		'Numbers Unary Minus',
 		UnaryOperationTestFunctionFactory((a) => -a, 1, -1)
 );
 
-var prefixIncrement = new OperationTestCaseFactory(
+var prefixIncrement = OperationTestCaseFactory(
 		'Numbers Prefix Increment',
 		UnaryOperationTestFunctionFactory((a) => ++a, 1, 2)
 );
 
-var postfixIncrement = new OperationTestCaseFactory(
+var postfixIncrement = OperationTestCaseFactory(
 		'Numbers Postfix Increment',
 		UnaryOperationTestFunctionFactory((a) => a++, 1, 1)
 );
 
-var prefixDecrement = new OperationTestCaseFactory(
+var prefixDecrement = OperationTestCaseFactory(
 		'Numbers Prefix Decrement',
 		UnaryOperationTestFunctionFactory((a) => --a, 1, 0)
 );
 
-var postfixDecrement = new OperationTestCaseFactory(
+var postfixDecrement = OperationTestCaseFactory(
 		'Numbers Postfix Decrement',
 		UnaryOperationTestFunctionFactory((a) => a--, 1, 1)
 );
 
 // bitwise operations
 
-var bitwiseAnd = new OperationTestCaseFactory(
+var bitwiseAnd = OperationTestCaseFactory(
 		'Numbers Bitwise And',
 		BinaryOperationTestFunctionFactory((a, b) => a&b, 0xFA, 0xAF, 0xAA, 0xAA)
 );
 
-var bitwiseOr = new OperationTestCaseFactory(
+var bitwiseOr = OperationTestCaseFactory(
 		'Numbers Bitwise Or',
 		BinaryOperationTestFunctionFactory((a, b) => a|b, 0xFA, 0xAF, 0xFF, 0xFF)
 );
 
-var bitwiseXor = new OperationTestCaseFactory(
+var bitwiseXor = OperationTestCaseFactory(
 		'Numbers Bitwise Xor',
 		BinaryOperationTestFunctionFactory((a, b) => a^b, 0xFA, 0xAF, 0x55, 0x55)
 );
 
-var bitwiseNegation = new OperationTestCaseFactory(
+var bitwiseNegation = OperationTestCaseFactory(
 		'Numbers Bitwise Negation',
 		UnaryOperationTestFunctionFactory((a) => ~a, 15, -16)
 );
 
-var bitwiseShiftLeft = new OperationTestCaseFactory(
+var bitwiseShiftLeft = OperationTestCaseFactory(
 		'Numbers Bitwise Shift Left',
 		BinaryOperationTestFunctionFactory((a, b) => a << b, 2, 16, 131072, 64)
 );
 
-var bitwiseShiftRight = new OperationTestCaseFactory(
+var bitwiseShiftRight = OperationTestCaseFactory(
 		'Numbers Bitwise Shift Right',
 		BinaryOperationTestFunctionFactory((a, b) => a >> b, 2, 16, 0, 4)
 );
 
 // logical operations
 
-var logicalAnd = new OperationTestCaseFactory(
+var logicalAnd = OperationTestCaseFactory(
 		'Numbers Logical And', 
 		BinaryOperationTestFunctionFactory((a, b) => a && b, 1, 0, 0, 0)
 );
 
-var logicalOr = new OperationTestCaseFactory(
+var logicalOr = OperationTestCaseFactory(
 		'Numbers Logical Or',
 		BinaryOperationTestFunctionFactory((a, b) => a || b, 1, 0, 1, 1)
 );
 
-var logicalNot = new OperationTestCaseFactory(
+var logicalNot = OperationTestCaseFactory(
 		'Numbers Logical Not',
 		UnaryOperationTestFunctionFactory((a) => !a, 1, 0)
 );
 
 
-var doubleEquality = new OperationTestCaseFactory(
+var doubleEquality = OperationTestCaseFactory(
 		'Numbers Double Equality (==)',
 		BinaryOperationTestFunctionFactory((a, b) => (a == b), 1, 1, true, true)
 );
 
-var tripleEquality = new OperationTestCaseFactory(
+var tripleEquality = OperationTestCaseFactory(
 		'Numbers Triple Equality (===)',
 		BinaryOperationTestFunctionFactory((a, b) => (a === b), 1, 1, true, true)
 );
 
-var doubleInequality = new OperationTestCaseFactory(
+var doubleInequality = OperationTestCaseFactory(
 		'Numbers Double IneEquality (!=)',
 		BinaryOperationTestFunctionFactory((a, b) => (a != b), 1, 1, false, false)
 );
 
-var tripleInequality = new OperationTestCaseFactory(
+var tripleInequality = OperationTestCaseFactory(
 		'Numbers Triple Inequality (!==)',
 		BinaryOperationTestFunctionFactory((a, b) => (a !== b), 1, 1, false, false)
 );
 
-var lessThan = new OperationTestCaseFactory(
+var lessThan = OperationTestCaseFactory(
 		'Numbers Less Than (<)',
 		BinaryOperationTestFunctionFactory((a, b) => (a < b), 0, 1, true, false)
 );
 
-var lessOrEqualThan = new OperationTestCaseFactory(
+var lessOrEqualThan = OperationTestCaseFactory(
 		'Numbers Less or Equal Than (<=)',
 		BinaryOperationTestFunctionFactory((a, b) => (a <= b), 1, 1, true, true)
 );
 
-var greaterThan = new OperationTestCaseFactory(
+var greaterThan = OperationTestCaseFactory(
 		'Numbers Greater Than (>)',
 		BinaryOperationTestFunctionFactory((a, b) => (a > b), 0, 1, false, true)
 );
 
-var greaterOrEqualThan = new OperationTestCaseFactory(
+var greaterOrEqualThan = OperationTestCaseFactory(
 		'Numbers Greater or Equal Than (>=)',
 		BinaryOperationTestFunctionFactory((a, b) => (a >= b), 1, 1, true, true)
 );
@@ -224,9 +244,9 @@ var valueOfTest = new TestCase(
 		1,
 		cleanup
 );
+
 exports.tests = [
 	creationTest,
-	typeofTest, 
 	valueOfTest,
 	// comparison
 	doubleEquality,

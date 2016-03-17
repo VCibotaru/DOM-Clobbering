@@ -20,7 +20,9 @@ var Syntax = {
 	ExpressionStatement: 'ExpressionStatement',
 	CallExpression: 'CallExpression',
 	UnaryExpression: 'UnaryExpression',
-	BinaryExpression: 'BinaryExpression'
+	BinaryExpression: 'BinaryExpression',
+	LogicalExpression: 'LogicalExpression',
+	UpdateExpression: 'UpdateExpression',
 };
 
 
@@ -92,8 +94,12 @@ var Replacer = function(predicate, replace) {
 var OperationReplacerFactory = function(op, opReplacerName) {
 	let replacer = new Replacer(
 			function(node) {
-				let expression = isUnaryOperator(op) ? Syntax.UnaryExpression : Syntax.BinaryExpression;
-				return node.type === expression && node.operator === op;
+				if (isUnaryOperator(op)) {
+					return (node.type === Syntax.UnaryExpression || node.type === Syntax.UpdateExpression) && node.operator === op;
+				}
+				else {
+					return (node.type === Syntax.BinaryExpression || node.type === Syntax.LogicalExpression) && node.operator === op;
+				}	
 			},
 			function(node) {
 				node.type = Syntax.CallExpression;

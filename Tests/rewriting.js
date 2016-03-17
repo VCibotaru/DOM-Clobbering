@@ -1,12 +1,10 @@
 var TestCase = require('./tests').TestCase;
 var rewrite = require('rewriter').rewrite;
 var proxy = require('proxy');
-var mapMocksToObject = require('mocks').mapMocksToObject;
 
 var cleanup = proxy.storage.clearTaintedObjects.bind(proxy.storage);
 
-mapMocksToObject(this);
-
+require('mocks').mapMocksToObject(this);
 var typeofTest = new TestCase(
 		'Typeof rewriting',
 		function() {
@@ -30,7 +28,6 @@ var typeofTest = new TestCase(
 			"return [o, s, n, b, f, O, S, N, B, F];" +
 			"})();";
 			var newCode = rewrite(code);
-			console.log(newCode);
 			return eval(newCode); 
 		},
 		['object', 'string', 'number', 'boolean', 'function',
@@ -58,12 +55,16 @@ var tripleEqualTest = new TestCase(
 			"var n = (numProxy === N);" +
 			"var b = (boolProxy === B);" +
 			"var f = (funcProxy === F);" +
-			"return [o, s, n, b, f];" + 
+			"var o1 = ({} === {});" +
+			"var s1 = ('str' === 'str');" + 
+			"var n1 = (1 === 1);" + 
+			"var b1 = (true === true);" +
+			"return [o, s, n, b, f, o1, s1, n1, b1];" + 
 			"})();";
 			var newCode = rewrite(code);
 			return eval(newCode); 
 		},
-		[false, true, true, true, false],
+		[false, true, true, true, false, false, true, true, true],
 		cleanup
 );
 
