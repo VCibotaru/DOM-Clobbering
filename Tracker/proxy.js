@@ -14,8 +14,8 @@ var objectNameKey = '__object_name__';
 // that are not tainted (e.g., they were assigned after the initial taint of the object)
 var untaintedObjectNamesKey = '__untainted_objects__'; 
 
-// proxy[proxyTypeofKey] == the type of the wrapped object (string, object, ...) 
-var proxyTypeofKey = '__proxy_type__';
+// proxy[wrappedObjectKey] == the object wrapped by the proxy
+var wrappedObjectKey = '__wrapped_object__';
 
 /**
  * A class for storing the results of the tainting.
@@ -112,7 +112,7 @@ var HandlerFactory = function(customActions) {
 					 return customActions[name]();
 				 }
 				 // the following properties correspond to metadata stored on object
-				 let metanames = [proxyTypeofKey, objectNameKey, untaintedObjectNamesKey];
+				 let metanames = [objectNameKey, untaintedObjectNamesKey, wrappedObjectKey];
 				 if (metanames.indexOf(name) !== -1) {
 					 return target[name];
 				 }
@@ -181,7 +181,7 @@ var ProxyFactory = function(objectConstructor, customActions) {
 		// do the objectWrapper initialization
 		objectWrapper[objectNameKey] = name;
 		objectWrapper[untaintedObjectNamesKey] = new Set();
-		objectWrapper[proxyTypeofKey] = typeof object;
+		objectWrapper[wrappedObjectKey] = object;
 
 		//TODO: add some more custom fields initialization
 		let pr = new Proxy(objectWrapper, handler);
@@ -252,6 +252,6 @@ exports.importCode = importCode;
 exports.stringValueKey = stringValueKey;
 exports.objectNameKey = objectNameKey;
 exports.untaintedObjectNamesKey = untaintedObjectNamesKey;
-exports.proxyTypeofKey = proxyTypeofKey;
+exports.wrappedObjectKey = wrappedObjectKey;
 
 exports.isObjectTainted = ProxyStorage.prototype.isObjectTainted.bind(storage);

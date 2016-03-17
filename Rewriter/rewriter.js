@@ -1,5 +1,8 @@
-// require('mocks');
-
+/**
+ * This module contains the rewrite(code) function, that rewrites the code.
+ * For a better explanation of what it does, please look at replacer and mocks modules. 
+ * @module rewriter
+ */
 var esprima = require('esprima');
 var escodegen = require('escodegen');
 var estraverse = require('estraverse');
