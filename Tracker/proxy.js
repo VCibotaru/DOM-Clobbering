@@ -134,12 +134,12 @@ var HandlerFactory = function(customActions) {
 				 if (metanames.indexOf(name) !== -1) {
 					 return target[name];
 				 }
-				 if (name === 'toString') {
-					 return function(){return 'Tainted Proxy Object';};
-				 }
-				 if (name === 'valueOf') {
-					 let value = target.valueOf();
-					 return function() {return value;};
+				 // if toString or valueOf methods are called, then we need to 
+				 // pass the call to the primitive value stored, not to the wrapper
+				 if (name === 'toString' || name === 'valueOf') {
+					 let obj = getWrappedObject(target);
+					 let val = obj[name](); 
+					 return function() {return val;};
 				 }
 				 // the following properties correspond to object's data
 

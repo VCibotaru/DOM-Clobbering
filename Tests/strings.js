@@ -76,8 +76,19 @@ var plusTest = new TestCase(
 		cleanup
 );
 
-// TODO: eval
+var evalTest = new TestCase(
+		'Strings eval()',
+		function() {
+			let code = "" +
+			"let x = proxy.buildProxy('2+2');" +
+			"eval(x);" +
+			"";
+			let newCode = rewrite(code);
+			return eval(newCode);
+		},
+		4,
+		cleanup
+);
 // TODO: functions
-//
-exports.tests = [creationTest, typeofTest, doubleEqualTest, tripleEqualTest, plusTest];
+exports.tests = [creationTest, typeofTest, doubleEqualTest, tripleEqualTest, plusTest, evalTest];
 exports.testSuite = 'Strings test suite';

@@ -29,8 +29,6 @@ var UnaryOperationTestFunctionFactory = function(op, init, res) {
 		let newOp = lambdaToFunc(rewrite(op.toString()));
 		let x = proxy.buildProxy(init, 'x');
 		let y = newOp(x);
-		// console.log(x + ' ' + typeof x);
-		// console.log(y + ' ' + typeof y);
 		require('mocks').mapMocksToObject(this);
 		let te = this[replacerNames['===']]; // triple equal mock
 		let de = this[replacerNames['==']]; // double equal mock
@@ -245,6 +243,19 @@ var valueOfTest = new TestCase(
 		cleanup
 );
 
+var evalTest = new TestCase(
+		'Numbers eval()',
+		function() {
+			let code = "" +
+			"let x = proxy.buildProxy(4);" +
+			"eval(x);" +
+			"";
+			let newCode = rewrite(code);
+			return eval(newCode);
+		},
+		4,
+		cleanup
+);
 exports.tests = [
 	creationTest,
 	valueOfTest,
@@ -280,6 +291,7 @@ exports.tests = [
 	logicalAnd,
 	logicalOr,
 	logicalNot,
-
+	// eval
+	evalTest,
 ];
 exports.testSuite = 'Number Proxy Test Suite';

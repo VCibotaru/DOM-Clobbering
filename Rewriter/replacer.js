@@ -14,6 +14,7 @@
  *@module replacer 
  */
 
+var _ = require('underscore');
 
 var Syntax = {
 	Identifier: 'Identifier',
@@ -25,9 +26,17 @@ var Syntax = {
 	UpdateExpression: 'UpdateExpression',
 };
 
-
-var replacerNames = {
+var unaryOperatorNames = {
+	'~'     : '__bitwise_not__',
+	'!'     : '__logical_not__',
 	'typeof': '__typeof__',
+	// '+'     : '__unary_plus__',
+	// '-'     : '__unary_minus__',
+	'++'    : '__increment__',
+	'--'    : '__decrement__',
+};
+
+var binaryOperatorNames = {
 	'=='    : '__double_equal__',
 	'==='   : '__triple_equal__',
 	'!='    : '__double_inequal__',
@@ -38,33 +47,65 @@ var replacerNames = {
 	'/'     : '__divide__',
 	'%'     : '__modulus__',
 	//TODO: unary plus, unary minus
-	'++'    : '__increment__',
-	'--'    : '__decrement__',
 	'&'     : '__bitwise_and__',
 	'|'     : '__bitwise_or__',
 	'^'     : '__xor__',
-	'~'     : '__bitwise_not__',
 	'>>'    : '__shift_right__',
 	'<<'    : '__shift_left__',
 	'&&'    : '__logical_and__',
 	'||'    : '__logical_or__',
-	'!'     : '__logical_not__',
 	'>'     : '__greater__',
 	'<'     : '__lesser__',
 	'>='    : '__greater_equal__',
 	'<='    : '__lesser_equal__',
 };
 
+var functionNames = {
+	'eval' : '__eval__',
+};
+
+// shallow copies all the values from src to dst
+var copyObject = function(src, dst) {
+	for (let pr in src) {
+		dst[pr] = src[pr];
+	}
+};
+
+// replaceNames is a concatenation of operatorNames and funcNames
+var replacerNames = {};
+copyObject(functionNames, replacerNames);
+copyObject(unaryOperatorNames, replacerNames);
+copyObject(binaryOperatorNames, replacerNames);
+
 
 /**
  * Checks if the operator is unary.
- * @function
+ * @function isUnaryOperator
  * @param {String} op - The string representation of the operator (e.g. '===')
  * @return - True if op is unary, false if it is binary
  */
 var isUnaryOperator = function(op) {
-	var unaryOperators = new Set(['typeof', '++', '--', '~', '!']);
-	return unaryOperators.has(op);
+	return _.has(unaryOperatorNames, op);
+};
+
+/**
+ * Checks if the operator is binary.
+ * @function isBinaryOperator
+ * @param {String} op - The string representation of the operator (e.g. '===')
+ * @return - True if op is unary, false if it is binary
+ */
+var isBinaryOperator = function(op) {
+	return _.has(binaryOperatorNames, op);
+};
+
+/**
+ * Checks if the object is a function.
+ * @function isFunction
+ * @param {String} func - The string representation of the function (e.g. 'eval')
+ * @return - True if func is a function, else is false
+ */
+var isFunction = function(func) {
+	return _.has(functionNames, func);
 };
 
 /**
@@ -84,22 +125,18 @@ var Replacer = function(predicate, replace) {
 
 
 /**
- * A factory for creating the operators' replacers.
- * @function
+ * A factory for creating the unary operators' replacers.
+ * @function UnaryOperatorReplacerFactory
  * @param {String} op - The string representation of the operator (e.g. '===')
  * @param {String} opReplacerName - The name of the function that shall replace the operator
  * (e.g. '__triple_equal__')
  * @return - The replacer object
  */
-var OperationReplacerFactory = function(op, opReplacerName) {
+var UnaryOperatorReplacerFactory = function(op, opReplacerName) {
 	let replacer = new Replacer(
 			function(node) {
-				if (isUnaryOperator(op)) {
-					return (node.type === Syntax.UnaryExpression || node.type === Syntax.UpdateExpression) && node.operator === op;
-				}
-				else {
-					return (node.type === Syntax.BinaryExpression || node.type === Syntax.LogicalExpression) && node.operator === op;
-				}	
+				return (node.type === Syntax.UnaryExpression || node.type === Syntax.UpdateExpression) && node.operator === op;
+				return (node.type === Syntax.BinaryExpression || node.type === Syntax.LogicalExpression) && node.operator === op;
 			},
 			function(node) {
 				node.type = Syntax.CallExpression;
@@ -107,7 +144,7 @@ var OperationReplacerFactory = function(op, opReplacerName) {
 					type:Syntax.Identifier,
 					name: opReplacerName
 				};
-				let args  = isUnaryOperator(op) ? [node.argument] : [node.left, node.right];
+				let args  = [node.argument];
 				node.arguments = args;
 				return node;
 			}
@@ -115,18 +152,89 @@ var OperationReplacerFactory = function(op, opReplacerName) {
 	return replacer;
 };
 
+/**
+ * A factory for creating the binary operators' replacers.
+ * @function BinaryOperatorReplacerFactory
+ * @param {String} op - The string representation of the operator (e.g. '===')
+ * @param {String} opReplacerName - The name of the function that shall replace the operator
+ * (e.g. '__triple_equal__')
+ * @return - The replacer object
+ */
+var BinaryOperatorReplacerFactory = function(op, opReplacerName) {
+	let replacer = new Replacer(
+			function(node) {
+				return (node.type === Syntax.BinaryExpression || node.type === Syntax.LogicalExpression) && node.operator === op;
+			},
+			function(node) {
+				node.type = Syntax.CallExpression;
+				node.callee = {
+					type:Syntax.Identifier,
+					name: opReplacerName
+				};
+				let args = [node.left, node.right];
+				node.arguments = args;
+				return node;
+			}
+	);
+	return replacer;
+};
+
+/**
+ * A factory for creating the functions operators' replacers.
+ * @function FunctionReplacerFactory
+ * @param {String} func - The functions name (e.g. 'eval')
+ * @param {String} funcReplacerName - The name of the function that shall replace func 
+ * (e.g. '__eval__')
+ * @return - The replacer object
+ */
+var FunctionReplacerFactory = function(func, funcReplacerName) {
+	let replacer = new Replacer(
+		function(node) {
+			return node.type === Syntax.CallExpression && node.callee.name === func;
+		},
+		function(node) {
+			node.callee.name = funcReplacerName;
+			return node;
+		}
+	);
+	return replacer;
+};	
+
+
 // returns all the replacers described in replacerNames
 var createAllReplacers = function() {
 	let replacers = [];
-	for (let name in replacerNames) {
-		let replacer = OperationReplacerFactory(name, replacerNames[name]);
-		replacers.push(replacer);
-
+	let nameTypes = {
+		'unary'    : unaryOperatorNames,
+		'binary'   : binaryOperatorNames,
+		'function' : functionNames,
+	};
+	let factories = {
+		'unary'    : UnaryOperatorReplacerFactory,
+		'binary'   : BinaryOperatorReplacerFactory,
+		'function' : FunctionReplacerFactory,
+	};
+	for (let type in nameTypes) {
+		// for all types of names (function names, operator names, ...)
+		for (let name in nameTypes[type]) {
+			// for all names of current type of names
+			
+			// choose the factory, depending on name type
+			let factory = factories[type];
+			// create a replacer for current name
+			let replacer = factory(name, nameTypes[type][name]);
+			// add replacer to all replacers
+			replacers.push(replacer);
+		}
 	}
+	
 	return replacers;
 };
+
 
 /** The array containing all replacers*/
 exports.replacers = createAllReplacers();
 exports.replacerNames = replacerNames;
 exports.isUnaryOperator = isUnaryOperator;
+exports.isBinaryOperator = isBinaryOperator;
+exports.isFunction = isFunction;

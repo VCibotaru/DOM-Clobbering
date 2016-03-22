@@ -10,33 +10,37 @@
 var proxy = require('proxy');
 var names = require('replacer').replacerNames;
 var isUnaryOperator = require('replacer').isUnaryOperator;
-
+var isBinaryOperator = require('replacer').isBinaryOperator;
+var isFunction = require('replacer').isFunction;
 
 /**
- * Build mocks for unary operators.
+ * Builds mocks for unary operators.
  * @function
- * @param {function} op - A function that incapsulates the operator.
+ * @param {string} op - String representation of the operator (e.g. '===') 
  * @return - The mock.
  */
-var UnaryOperationMockFactory = function(op) {
+var UnaryOperatorMockFactory = function(op) {
+	// build new function that incapsulates the operator
+	let opFunc = new Function('x', 'return ' + op + ' x;');
 	let resultFunc = function(obj) {
 		if (proxy.isObjectTainted(obj) === true) {
 			obj = proxy.getWrappedObject(obj);
-			// console.log(obj + ' : ' + typeof obj);
-			return proxy.buildProxy(op(obj), 'new_obj_from_op:_' + op);
+			return proxy.buildProxy(opFunc(obj), 'new_obj_from_op:_' + op);
 		}
-		return op(obj);
+		return opFunc(obj);
 	};
 	return resultFunc;
 };
 
 /**
- * Build mocks for binary operators.
+ * Builds mocks for binary operators.
  * @function
- * @param {function} op - A function that incapsulates the operator.
+ * @param {string} op - String representation of the operator (e.g. '===') 
  * @return - The mock.
  */
-var BinaryOperationMockFactory = function(op) {
+var BinaryOperatorMockFactory = function(op) {
+	// build new function that incapsulates the operator
+	let opFunc = new Function('x', 'y', 'return x ' + op + ' y;');
 	let resultFunc = function(left, right) {
 		let l = proxy.isObjectTainted(left);
 		let r = proxy.isObjectTainted(right);
@@ -47,44 +51,65 @@ var BinaryOperationMockFactory = function(op) {
 			right = proxy.getWrappedObject(right); 
 		}
 		if (l === true || r === true) {
-			return proxy.buildProxy(op(left,right), 'new_obj_from_op:_' + op); 
+			return proxy.buildProxy(opFunc(left,right), 'new_obj_from_op:_' + op); 
 		}
-		return op(left, right);
+		return opFunc(left, right);
 	};
 	return resultFunc;
 };
 
 /**
- * Builds mocks for operators.
+ * Builds mocks for functions
  * @function
- * @param {String} opRepr - The string representation of the operator (e.g. '===')
- * @param {Function} opFunc - A function that incapsulates the operator.
- * @return - The mock
+ * @param {string} funcName - Name of the function (e.g. 'eval') 
+ * @return - The mock.
  */
-var OperationMockFactory = function(opRepr, opFunc) {
-	let isUnary = isUnaryOperator(opRepr);
-	if (isUnary === true) {
-		return UnaryOperationMockFactory(opFunc);
-	}
-	return BinaryOperationMockFactory(opFunc);
+var FunctionMockFactory = function(funcName) {
+	// TODO: now there is only one function to be mocked: eval
+	// eval takes one parameter
+	// if in future there will be other (non-unary) functions
+	// I shall think on how to implement this factory in a better way
+	let func = new Function('x', 'return ' + funcName + '(x)');
+	let resultFunc = function(obj) {
+		if (proxy.isObjectTainted(obj) === true) {
+			obj = proxy.getWrappedObject(obj);
+			return proxy.buildProxy(func(obj), 'new_obj_from_op:_' + funcName);
+		}
+		return func(obj);
+	};
+	return resultFunc;
 };
-
+	
 /**
  * Builds the mocks and maps them to the given object's namespace.
  * @function
  * @param {Object} obj - The object to which namespace the mocks must be mapped.
  */
 var mapMocksToObject = function(obj) {
-	for (let op in names) {
-		let func;
-		if (isUnaryOperator(op) === true) {
-			func = new Function('x', 'return ' + op + ' x;');
+	let predicates = {
+		'unary'    : isUnaryOperator,
+		'binary'   : isBinaryOperator,
+		'function' : isFunction,
+	};
+	let factories = {
+		'unary'    : UnaryOperatorMockFactory,
+		'binary'   : BinaryOperatorMockFactory,
+		'function' : FunctionMockFactory,
+	};
+	for (let name in names) {
+		let factory;
+		// select the needed factory depending on the name type
+		for (let type in predicates) {
+			if (predicates[type](name) === true) {
+				factory = factories[type];
+				break;
+			}
 		}
-		else {
-			func = new Function('x', 'y', 'return x ' + op + ' y;');
+		if (factory === undefined) {
+			throw 'Unknown type in mocks.mapMocksToObject';
 		}
-		let mock = OperationMockFactory(op, func);
-		obj[names[op]] = mock;
+		let mock = factory(name);
+		obj[names[name]] = mock;
 	}
 };
 
