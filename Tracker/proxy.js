@@ -101,7 +101,7 @@ var getProxyConstructorForObject = function(obj) {
 /**
  * Creates a proxy of one of the special types (StringProxy, ...)
  * depending on the object's type.
- * @function
+ * @function buildProxy
  * @param {Object} obj - The object to be wrapped with a proxy.
  * @param {String} name - See proxy[objectNameKey].
  * @return - A proxy object.
@@ -283,23 +283,11 @@ var importCode = "" +
 "var ProxyFactory = " + ProxyFactory + ";" +
 "var StringProxy = ProxyFactory(function(string){return new String(string);}, {});" +
 "var ObjectProxy = ProxyFactory(function(object){return object;}, {}); "; 
-// TODO: add all other proxies here
-// TODO: add isObjectTainted here
 
-exports.StringProxy = StringProxy;
-exports.ObjectProxy = ObjectProxy;
-exports.NumberProxy = NumberProxy;
-exports.BooleanProxy = BooleanProxy;
-exports.FunctionProxy = FunctionProxy;
-exports.storage = storage;
 exports.importCode = importCode;
 
-exports.stringValueKey = stringValueKey;
-exports.objectNameKey = objectNameKey;
-exports.untaintedObjectNamesKey = untaintedObjectNamesKey;
-exports.wrappedObjectKey = wrappedObjectKey;
-exports.proxyTypeKey = proxyTypeKey;
-
 exports.getWrappedObject = getWrappedObject;
-exports.isObjectTainted = ProxyStorage.prototype.isObjectTainted.bind(storage);
 exports.buildProxy = buildProxy;
+exports.isObjectTainted = ProxyStorage.prototype.isObjectTainted.bind(storage);
+exports.clearTaintedObjects = ProxyStorage.prototype.clearTaintedObjects.bind(storage);
+exports.getTaintedNames = ProxyStorage.prototype.getTaintedNames.bind(storage);

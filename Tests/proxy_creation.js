@@ -5,35 +5,35 @@ var proxyCreationTest = new TestCase(
 		'Proxy Creation',
 		function() {
 			var obj = {'foo': 'bar'};
-			var pr = proxy.ObjectProxy(obj, 'base');
-			return proxy.storage.getTaintedNames();
+			var pr = proxy.buildProxy(obj, 'base');
+			return proxy.getTaintedNames();
 		},
 		["base"],
-		proxy.storage.clearTaintedObjects.bind(proxy.storage)
+		proxy.clearTaintedObjects
 );
 
 var proxyPropagationTest = new TestCase(
 		'Proxy Propagation',
 		function () {
 			var obj = {'foo': 'bar'};
-			var pr = proxy.ObjectProxy(obj, 'base');
+			var pr = proxy.buildProxy(obj, 'base');
 			var x = pr;
 			return proxy.isObjectTainted(x);
 		},
 		true,
-		proxy.storage.clearTaintedObjects.bind(proxy.storage)
+		proxy.clearTaintedObjects
 );
 
 var proxyReassignmentTest = new TestCase(
 		'Proxy Reassignment',
 		function () {
 			var obj = {'foo': 'bar'};
-			var pr = proxy.ObjectProxy(obj, 'base');
+			var pr = proxy.buildProxy(obj, 'base');
 			pr = 'asd';
 			return proxy.isObjectTainted(pr);
 		},
 		false,
-		proxy.storage.clearTaintedObjects.bind(proxy.storage)
+		proxy.clearTaintedObjects
 );
 
 exports.tests = [proxyCreationTest, proxyPropagationTest, proxyReassignmentTest];

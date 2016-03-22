@@ -4,33 +4,33 @@ var proxy = require('proxy');
 var booleanLiteralTest = new TestCase(
 		'Boolean Literal Test',
 		function() {
-			var pr = proxy.BooleanProxy(true, 'base');
+			var pr = proxy.buildProxy(true, 'base');
 			return proxy.isObjectTainted(pr);
 		},
 		true,	
-		proxy.storage.clearTaintedObjects.bind(proxy.storage)
+		proxy.clearTaintedObjects
 );
 
 
 var numberLiteralTest = new TestCase(
 		'Number Literal Test',
 		function() {
-			var pr = proxy.NumberProxy(1, 'base');
+			var pr = proxy.buildProxy(1, 'base');
 			return proxy.isObjectTainted(pr);
 		},
 		true,	
-		proxy.storage.clearTaintedObjects.bind(proxy.storage)
+		proxy.clearTaintedObjects
 );
 
 
 var stringLiteralTest = new TestCase(
 		'String Literal Test',
 		function() {
-			var pr = proxy.StringProxy('asd', 'base');
+			var pr = proxy.buildProxy('asd', 'base');
 			return proxy.isObjectTainted(pr);
 		},
 		true,	
-		proxy.storage.clearTaintedObjects.bind(proxy.storage)
+		proxy.clearTaintedObjects
 );
 
 

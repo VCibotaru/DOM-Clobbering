@@ -2,7 +2,7 @@ var TestCase = require('./tests').TestCase;
 var rewrite = require('rewriter').rewrite;
 var proxy = require('proxy');
 
-var cleanup = proxy.storage.clearTaintedObjects.bind(proxy.storage);
+var cleanup = proxy.clearTaintedObjects;
 
 require('mocks').mapMocksToObject(this);
 var typeofTest = new TestCase(
@@ -10,11 +10,11 @@ var typeofTest = new TestCase(
 		function() {
 			var code = "" +
 			"(function() {" +
-			"var objProxy  = proxy.ObjectProxy({});" +
-			"var strProxy  = proxy.StringProxy('a');" +
-   			"var numProxy  = proxy.NumberProxy(1);" +
-			"var boolProxy = proxy.BooleanProxy(true);" +
-			"var funcProxy = proxy.FunctionProxy(function(){});" + 
+			"var objProxy  = proxy.buildProxy({});" +
+			"var strProxy  = proxy.buildProxy('a');" +
+   			"var numProxy  = proxy.buildProxy(1);" +
+			"var boolProxy = proxy.buildProxy(true);" +
+			"var funcProxy = proxy.buildProxy(function(){});" + 
 			"var o = typeof objProxy;" +
 			"var s = typeof strProxy;" +
 			"var n = typeof numProxy;" +
@@ -40,11 +40,11 @@ var tripleEqualTest = new TestCase(
 		function() {
 			var code = "" +
 			"(function() {" +
-			"var objProxy  = proxy.ObjectProxy({});" +
-			"var strProxy  = proxy.StringProxy('a');" +
-   			"var numProxy  = proxy.NumberProxy(1);" +
-			"var boolProxy = proxy.BooleanProxy(true);" +
-			"var funcProxy = proxy.FunctionProxy(function(){});" + 
+			"var objProxy  = proxy.buildProxy({});" +
+			"var strProxy  = proxy.buildProxy('a');" +
+   			"var numProxy  = proxy.buildProxy(1);" +
+			"var boolProxy = proxy.buildProxy(true);" +
+			"var funcProxy = proxy.buildProxy(function(){});" + 
 			"var O = {};" +
 			"var S = 'a';" + 
 			"var N = 1;" +

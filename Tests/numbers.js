@@ -2,14 +2,14 @@ var TestCase = require('./tests').TestCase;
 var proxy = require('proxy');
 var rewrite = require('rewriter').rewrite;
 var replacerNames = require('replacer').replacerNames;
-var cleanup = proxy.storage.clearTaintedObjects.bind(proxy.storage);
+var cleanup = proxy.clearTaintedObjects;
 
 require('mocks').mapMocksToObject(this);
 
 var creationTest = new TestCase(
 		'Number Proxy creation',
 		function() {
-			let x = proxy.NumberProxy(1, 'x');
+			let x = proxy.buildProxy(1, 'x');
 			return proxy.isObjectTainted(x);
 		},
 		true,
@@ -27,7 +27,7 @@ var lambdaToFunc = function(lambda) {
 var UnaryOperationTestFunctionFactory = function(op, init, res) {
 	let func = function() {
 		let newOp = lambdaToFunc(rewrite(op.toString()));
-		let x = proxy.NumberProxy(init, 'x');
+		let x = proxy.buildProxy(init, 'x');
 		let y = newOp(x);
 		// console.log(x + ' ' + typeof x);
 		// console.log(y + ' ' + typeof y);
@@ -44,8 +44,8 @@ var UnaryOperationTestFunctionFactory = function(op, init, res) {
 var BinaryOperationTestFunctionFactory = function(op, initX, initY, XY, YX) {
 	let func = function() {
 			let newOp = lambdaToFunc(rewrite(op.toString()));
-			let x = proxy.NumberProxy(initX, 'x');
-			let y = proxy.NumberProxy(initY, 'y');
+			let x = proxy.buildProxy(initX, 'x');
+			let y = proxy.buildProxy(initY, 'y');
 			let z = initY;
 			let xy = newOp(x, y); 
 			let yx = newOp(y, x); 
@@ -190,7 +190,7 @@ var logicalOr = OperationTestCaseFactory(
 
 var logicalNot = OperationTestCaseFactory(
 		'Numbers Logical Not',
-		UnaryOperationTestFunctionFactory((a) => !a, 1, 0)
+		UnaryOperationTestFunctionFactory((a) => !a, 1, false)
 );
 
 
@@ -237,7 +237,7 @@ var greaterOrEqualThan = OperationTestCaseFactory(
 var valueOfTest = new TestCase(
 		'Numbers valueOf()',
 		function() {
-			let x = proxy.NumberProxy(1);
+			let x = proxy.buildProxy(1);
 			let y = x.valueOf();
 			return y;
 		},

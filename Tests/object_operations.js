@@ -1,15 +1,15 @@
 var TestCase = require('./tests').TestCase;
 var proxy = require('proxy');
 
-var cleanup = proxy.storage.clearTaintedObjects.bind(proxy.storage);
+var cleanup = proxy.clearTaintedObjects;
 var test1 = new TestCase(
 		'Property of a tainted object',
 		function() {
 			let obj = {'foo': {'bar': 'xyz'}};
-			let pr = proxy.ObjectProxy(obj, 'base');
+			let pr = proxy.buildProxy(obj, 'base');
 			let x = pr.foo;
 			let y = x.bar;
-			return proxy.storage.getTaintedNames();
+			return proxy.getTaintedNames();
 		},
 		["base", "base.foo", "base.foo.bar"],
 		cleanup
@@ -19,7 +19,7 @@ var test2 = new TestCase(
 		'Assignment of a tainted property to an untainted object',
 		function() {
 			let obj = {};
-			let pr = proxy.StringProxy('foo');
+			let pr = proxy.buildProxy('foo');
 			obj.name = pr;
 			let y = obj.name;
 			return proxy.isObjectTainted(y);
@@ -31,7 +31,7 @@ var test2 = new TestCase(
 var test3 = new TestCase(
 		'Assignment of a untainted property to an tainted object',
 		function() {
-			let pr = proxy.ObjectProxy({}, 'base');
+			let pr = proxy.buildProxy({}, 'base');
 			pr.x = 'foo';
 			let y = pr.x;
 			var set = pr[proxy.untaintedObjectNamesKey];
@@ -44,8 +44,8 @@ var test3 = new TestCase(
 var test4 = new TestCase(
 		'Assignment of a tainted property to a tainted object',
 		function() {
-			let pr = proxy.ObjectProxy({}, 'base');
-			let str = proxy.StringProxy('foo', 'str');
+			let pr = proxy.buildProxy({}, 'base');
+			let str = proxy.buildProxy('foo', 'str');
 			pr.str = str;
 			let x = pr.str;
 			return proxy.isObjectTainted(x);
@@ -57,7 +57,7 @@ var test4 = new TestCase(
 var test5 = new TestCase(
 		'Replacement of a tainted property of a tainted object with an untainted value',
 		function() {
-			let pr = proxy.ObjectProxy({'foo': 'bar'}, 'base');
+			let pr = proxy.buildProxy({'foo': 'bar'}, 'base');
 			pr.foo = 'asd';
 			let x = pr.foo;
 			return proxy.isObjectTainted(x);
@@ -69,9 +69,9 @@ var test5 = new TestCase(
 var test6 = new TestCase(
 		'Replacement of an untainted property of a tainted object with a tainted value',
 		function() {
-			let pr = proxy.ObjectProxy({}, 'base');
+			let pr = proxy.buildProxy({}, 'base');
 			pr.foo = 'foo';
-			pr.foo = proxy.StringProxy('bar');
+			pr.foo = proxy.buildProxy('bar');
 			let x = pr.foo;
 			return proxy.isObjectTainted(x);
 		},
@@ -83,7 +83,7 @@ var test7 = new TestCase(
 		'Replacement of a tainted property of a untainted object with an untainted value',
 		function() {
 			let obj = {};
-			let pr = new proxy.StringProxy('bar');
+			let pr = new proxy.buildProxy('bar');
 			obj.foo = pr;
 			obj.foo = 'foo';
 			let x = obj.foo;
@@ -97,7 +97,7 @@ var test8 = new TestCase(
 		'Replacement of an untainted property of a untainted object with a tainted value',
 		function() {
 			let obj = {'foo': 'bar'};
-			let pr = new proxy.StringProxy('bar');
+			let pr = new proxy.buildProxy('bar');
 			obj.foo = pr;
 			let x = obj.foo;
 			return proxy.isObjectTainted(x);
@@ -115,7 +115,7 @@ var test9 = new TestCase(
 					return 'Hello from: ' + toString(this.name);
 				};
 			};
-			let pr = new proxy.StringProxy('name');
+			let pr = new proxy.buildProxy('name');
 			let obj = new TestObject(pr);
 			let x = TestObject.prototype.sayHello.call(obj);
 			return proxy.isObjectTainted(x);
@@ -134,8 +134,8 @@ var test10 = new TestCase(
 					return 'Hello from: ' + toString(this.name);
 				};
 			};
-			let pr = new proxy.StringProxy('name');
-			let obj = proxy.ObjectProxy(new TestObject(pr), 'base');
+			let pr = new proxy.buildProxy('name');
+			let obj = proxy.buildProxy(new TestObject(pr), 'base');
 			let x = obj.sayHello();
 			return proxy.isObjectTainted(x);
 		},
