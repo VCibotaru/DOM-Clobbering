@@ -89,6 +89,28 @@ var evalTest = new TestCase(
 		4,
 		cleanup
 );
-// TODO: functions
-exports.tests = [creationTest, typeofTest, doubleEqualTest, tripleEqualTest, plusTest, evalTest];
+
+var sliceTest = new TestCase(
+		'Strings slice()',
+		function() {
+			let pr = proxy.buildProxy('foobar');
+			let x = pr.slice(0, 3);
+			return __triple_equal__(x, 'foo') && proxy.isObjectTainted(x);
+		},
+		true,
+		cleanup
+);
+
+var splitTest = new TestCase(
+		'Strings split()',
+		function() {
+			let pr = proxy.buildProxy('Foo. Bar.');
+			let x = pr.split('.');
+			return proxy.isObjectTainted(x);
+		},
+		true,
+		cleanup
+);
+
+exports.tests = [creationTest, typeofTest, doubleEqualTest, tripleEqualTest, plusTest, evalTest, sliceTest, splitTest];
 exports.testSuite = 'Strings test suite';
