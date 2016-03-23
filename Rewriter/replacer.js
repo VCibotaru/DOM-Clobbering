@@ -37,10 +37,6 @@ var unaryOperatorNames = {
 };
 
 var binaryOperatorNames = {
-	'=='    : '__double_equal__',
-	'==='   : '__triple_equal__',
-	'!='    : '__double_inequal__',
-	'!=='   : '__triple_inequal__',
 	'+'     : '__plus__',
 	'-'     : '__minus__',
 	'*'     : '__multiply__',
@@ -54,6 +50,29 @@ var binaryOperatorNames = {
 	'<<'    : '__shift_left__',
 	'&&'    : '__logical_and__',
 	'||'    : '__logical_or__',
+};
+
+/**
+ * Equality operators are separated into a distinct group because
+ * their results should not be tainted.
+ * The logic is the following:
+ * consider code:
+ * var a = __triple_equal__(proxy(1), proxy(2))
+ * if (a) { do_smth;}
+ * In this snippet do_smth should not obviously be executed
+ * but, if we taint the result of __triple_equal__ operator
+ * then a will be equal to BooleanProxy(false) which will be
+ * evaluated as true (wtf?!)
+ * To avoid  this situations we will not taint the results of equality
+ * operators. However, this approach has the downside of not catching
+ * all the tainted values.
+ * @name equalityOperatorNames
+ */
+var equalityOperatorNames = {
+	'=='    : '__double_equal__',
+	'==='   : '__triple_equal__',
+	'!='    : '__double_inequal__',
+	'!=='   : '__triple_inequal__',
 	'>'     : '__greater__',
 	'<'     : '__lesser__',
 	'>='    : '__greater_equal__',
@@ -76,13 +95,14 @@ var replacerNames = {};
 copyObject(functionNames, replacerNames);
 copyObject(unaryOperatorNames, replacerNames);
 copyObject(binaryOperatorNames, replacerNames);
+copyObject(equalityOperatorNames, replacerNames);
 
 
 /**
  * Checks if the operator is unary.
  * @function isUnaryOperator
  * @param {String} op - The string representation of the operator (e.g. '===')
- * @return - True if op is unary, false if it is binary
+ * @return - True if op is unary, else false
  */
 var isUnaryOperator = function(op) {
 	return _.has(unaryOperatorNames, op);
@@ -92,17 +112,26 @@ var isUnaryOperator = function(op) {
  * Checks if the operator is binary.
  * @function isBinaryOperator
  * @param {String} op - The string representation of the operator (e.g. '===')
- * @return - True if op is unary, false if it is binary
+ * @return - True if op is unary, else false
  */
 var isBinaryOperator = function(op) {
 	return _.has(binaryOperatorNames, op);
 };
 
 /**
+ * Checks if the operator is an equality operator.
+ * @function isEqualityOperator.
+ * @param {String} op - The string representation of the operator (e.g. '===')
+ * @return - True if op is an equality operator, else false
+ */
+var isEqualityOperator = function(op) {
+	return _.has(equalityOperatorNames, op);
+};
+/**
  * Checks if the object is a function.
  * @function isFunction
  * @param {String} func - The string representation of the function (e.g. 'eval')
- * @return - True if func is a function, else is false
+ * @return - True if func is a function, else false
  */
 var isFunction = function(func) {
 	return _.has(functionNames, func);
@@ -207,11 +236,14 @@ var createAllReplacers = function() {
 	let nameTypes = {
 		'unary'    : unaryOperatorNames,
 		'binary'   : binaryOperatorNames,
+		'equality' : equalityOperatorNames,
 		'function' : functionNames,
 	};
 	let factories = {
 		'unary'    : UnaryOperatorReplacerFactory,
 		'binary'   : BinaryOperatorReplacerFactory,
+		// equality operators is created using the same factory as the binary ones
+		'equality' : BinaryOperatorReplacerFactory,
 		'function' : FunctionReplacerFactory,
 	};
 	for (let type in nameTypes) {
@@ -238,3 +270,4 @@ exports.replacerNames = replacerNames;
 exports.isUnaryOperator = isUnaryOperator;
 exports.isBinaryOperator = isBinaryOperator;
 exports.isFunction = isFunction;
+exports.isEqualityOperator = isEqualityOperator;

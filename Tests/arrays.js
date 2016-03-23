@@ -33,7 +33,6 @@ var accessTest = new TestCase(
 var indexOfTest = new TestCase(
 		'Array indexOf function',
 		function() {
-			// console.log(Array.prototype.indexOf);
 			let pr = proxy.buildProxy(['foo', 'bar']);
 			return pr.indexOf('foo');
 		},

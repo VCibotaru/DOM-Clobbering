@@ -1,4 +1,4 @@
-/*
+/**
  * This module contains mock functions for different operators (e.g. typeof, ===);
  * A mock function is a function that will replace the operator in the rewritten code.
  * For example, we will need a mock to replace the === operator in such way, that
@@ -7,15 +7,17 @@
  * incapsulate the operator logic.
  * @module mocks
  */
+
 var proxy = require('proxy');
 var names = require('replacer').replacerNames;
 var isUnaryOperator = require('replacer').isUnaryOperator;
 var isBinaryOperator = require('replacer').isBinaryOperator;
 var isFunction = require('replacer').isFunction;
+var isEqualityOperator = require('replacer').isEqualityOperator;
 
 /**
  * Builds mocks for unary operators.
- * @function
+ * @function UnaryOperatorMockFactory
  * @param {string} op - String representation of the operator (e.g. '===') 
  * @return - The mock.
  */
@@ -34,7 +36,7 @@ var UnaryOperatorMockFactory = function(op) {
 
 /**
  * Builds mocks for binary operators.
- * @function
+ * @function BinaryOperatorMockFactory
  * @param {string} op - String representation of the operator (e.g. '===') 
  * @return - The mock.
  */
@@ -81,6 +83,30 @@ var FunctionMockFactory = function(funcName) {
 };
 	
 /**
+ * Build mocks for equality operators.
+ * This mocks differ from binary operator mocks because the result is
+ * not tainted. @see {@link equalityOperatorNames} for more details.
+ * @function EqualityMockFactory
+ * @param {string} op - String representation of the operator (e.g. '===') 
+ * @return - The mock.
+ */
+var EqualityMockFactory = function(op) {
+	let opFunc = new Function('x', 'y', 'return x ' + op + ' y;');
+	let resultFunc = function(left, right) {
+		let l = proxy.isObjectTainted(left);
+		let r = proxy.isObjectTainted(right);
+		if (l === true) {
+			left = proxy.getWrappedObject(left); 
+		}
+		if (r === true) {
+			right = proxy.getWrappedObject(right); 
+		}
+		// The result here is NOT TAINTED!!!
+		return opFunc(left, right);
+	};
+	return resultFunc;
+};
+/**
  * Builds the mocks and maps them to the given object's namespace.
  * @function
  * @param {Object} obj - The object to which namespace the mocks must be mapped.
@@ -89,11 +115,13 @@ var mapMocksToObject = function(obj) {
 	let predicates = {
 		'unary'    : isUnaryOperator,
 		'binary'   : isBinaryOperator,
+		'equality' : isEqualityOperator,
 		'function' : isFunction,
 	};
 	let factories = {
 		'unary'    : UnaryOperatorMockFactory,
 		'binary'   : BinaryOperatorMockFactory,
+		'equality' : EqualityMockFactory,
 		'function' : FunctionMockFactory,
 	};
 	for (let name in names) {

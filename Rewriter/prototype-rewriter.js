@@ -3,7 +3,7 @@
  * For example, in method Array.prototype.indexOf the objects are compared using 
  * the === operator. In our case the objects stored in the array are proxies,
  * so we would rather use the te method for proxy-aware comparison.
- * @module prototypes
+ * @module prototypE-rewriter
  */
 
 var names = require('replacer').replacerNames;
@@ -15,8 +15,8 @@ require('mocks').mapMocksToObject(this);
  * We replace the === operator with the te function for 
  * proxy-aware comparison.
  * The polyfill code is taken from here:
- * {@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/indexOf}
- * The === operator was replaced with te
+ * {@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/indexOf}.
+ * The === operator was replaced with te.
  * @function replaceArrayIndexOf
  */
 var replaceArrayIndexOf = function(obj) {
@@ -41,7 +41,6 @@ var replaceArrayIndexOf = function(obj) {
 		}
 		k = Math.max(n >= 0 ? n : len - Math.abs(n), 0);
 		while (k < len) {
-			console.log(te(o[k], searchElement));
 			if (k in o && (te(o[k], searchElement) === true)) {
 				return k;
 			}

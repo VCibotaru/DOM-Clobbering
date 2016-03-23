@@ -81,6 +81,35 @@ var BinaryOperationTestFunctionFactory = function(op, initX, initY, XY, YX) {
 	return func;
 };
 
+var EqualityOperationTestFunctionFactory = function(op, initX, initY, XY, YX) {
+	let func = function() {
+			let newOp = lambdaToFunc(rewrite(op.toString()));
+			let x = proxy.buildProxy(initX, 'x');
+			let y = proxy.buildProxy(initY, 'y');
+			let z = initY;
+			let xy = newOp(x, y); 
+			let yx = newOp(y, x); 
+			let xz = newOp(x, z);
+			let zx = newOp(z, x);
+			require('mocks').mapMocksToObject(this);
+			// all of following must be true
+			let res = [
+				xy == XY,
+			   	xy === XY, 
+				yx == YX,
+				yx === YX,
+				xz == XY,
+				xz === XY, 
+				zx == YX,
+				zx === YX,
+			];
+			res = res.map((a) => a.valueOf());
+			// console.log(res);
+			return res.reduce((a,b) => a && b, true);
+	};
+	return func;
+};
+
 var OperationTestCaseFactory = function(description, testFunc) {
 	return new TestCase(description, testFunc, true, cleanup);
 };
@@ -191,45 +220,46 @@ var logicalNot = OperationTestCaseFactory(
 		UnaryOperationTestFunctionFactory((a) => !a, 1, false)
 );
 
+// comparison operations
 
 var doubleEquality = OperationTestCaseFactory(
 		'Numbers Double Equality (==)',
-		BinaryOperationTestFunctionFactory((a, b) => (a == b), 1, 1, true, true)
+		EqualityOperationTestFunctionFactory((a, b) => (a == b), 1, 1, true, true)
 );
 
 var tripleEquality = OperationTestCaseFactory(
 		'Numbers Triple Equality (===)',
-		BinaryOperationTestFunctionFactory((a, b) => (a === b), 1, 1, true, true)
+		EqualityOperationTestFunctionFactory((a, b) => (a === b), 1, 1, true, true)
 );
 
 var doubleInequality = OperationTestCaseFactory(
 		'Numbers Double IneEquality (!=)',
-		BinaryOperationTestFunctionFactory((a, b) => (a != b), 1, 1, false, false)
+		EqualityOperationTestFunctionFactory((a, b) => (a != b), 1, 1, false, false)
 );
 
 var tripleInequality = OperationTestCaseFactory(
 		'Numbers Triple Inequality (!==)',
-		BinaryOperationTestFunctionFactory((a, b) => (a !== b), 1, 1, false, false)
+		EqualityOperationTestFunctionFactory((a, b) => (a !== b), 1, 1, false, false)
 );
 
 var lessThan = OperationTestCaseFactory(
 		'Numbers Less Than (<)',
-		BinaryOperationTestFunctionFactory((a, b) => (a < b), 0, 1, true, false)
+		EqualityOperationTestFunctionFactory((a, b) => (a < b), 0, 1, true, false)
 );
 
 var lessOrEqualThan = OperationTestCaseFactory(
 		'Numbers Less or Equal Than (<=)',
-		BinaryOperationTestFunctionFactory((a, b) => (a <= b), 1, 1, true, true)
+		EqualityOperationTestFunctionFactory((a, b) => (a <= b), 1, 1, true, true)
 );
 
 var greaterThan = OperationTestCaseFactory(
 		'Numbers Greater Than (>)',
-		BinaryOperationTestFunctionFactory((a, b) => (a > b), 0, 1, false, true)
+		EqualityOperationTestFunctionFactory((a, b) => (a > b), 0, 1, false, true)
 );
 
 var greaterOrEqualThan = OperationTestCaseFactory(
 		'Numbers Greater or Equal Than (>=)',
-		BinaryOperationTestFunctionFactory((a, b) => (a >= b), 1, 1, true, true)
+		EqualityOperationTestFunctionFactory((a, b) => (a >= b), 1, 1, true, true)
 );
 
 var valueOfTest = new TestCase(

@@ -2,6 +2,7 @@ var TestCase = require('./tests').TestCase;
 var proxy = require('proxy');
 
 var cleanup = proxy.clearTaintedObjects;
+require('mocks').mapMocksToObject(this);
 var test1 = new TestCase(
 		'Property of a tainted object',
 		function() {
@@ -112,7 +113,7 @@ var test9 = new TestCase(
 			let TestObject = function(name) {
 				this.name = name;
 				TestObject.prototype.sayHello = function() {
-					return 'Hello from: ' + toString(this.name);
+					return __plus__('Hello from: ', this.name);
 				};
 			};
 			let pr = new proxy.buildProxy('name');
