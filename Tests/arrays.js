@@ -4,6 +4,7 @@ var proxy = require('proxy');
 var cleanup = proxy.clearTaintedObjects;
 
 require('mocks').mapMocksToObject(this);
+require('prototype-rewriter').rewritePrototypes(this);
 
 var creationTest = new TestCase(
 		'Array Proxy creation',
@@ -27,12 +28,12 @@ var accessTest = new TestCase(
 		cleanup
 );
 
-// TODO:
 // We are in trouble here!!!
 // The best solution is probably to replace the Array.prototype.indexOf
 var indexOfTest = new TestCase(
 		'Array indexOf function',
 		function() {
+			// console.log(Array.prototype.indexOf);
 			let pr = proxy.buildProxy(['foo', 'bar']);
 			return pr.indexOf('foo');
 		},

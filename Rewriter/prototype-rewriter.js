@@ -1,0 +1,64 @@
+/**
+ * This module is created for replacing some prototype methods.
+ * For example, in method Array.prototype.indexOf the objects are compared using 
+ * the === operator. In our case the objects stored in the array are proxies,
+ * so we would rather use the te method for proxy-aware comparison.
+ * @module prototypes
+ */
+
+var names = require('replacer').replacerNames;
+require('mocks').mapMocksToObject(this);
+
+/**
+ * Replaces the Array.prototype.indexOf method. 
+ * This is needed to change the way in which the stored objects are compared.
+ * We replace the === operator with the te function for 
+ * proxy-aware comparison.
+ * The polyfill code is taken from here:
+ * {@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/indexOf}
+ * The === operator was replaced with te
+ * @function replaceArrayIndexOf
+ */
+var replaceArrayIndexOf = function(obj) {
+	// replace === with the te mock (te stands for triple equal)
+	let te = new Function("x", "y", "return " + names['==='] + "(x, y)");
+	obj.Array.prototype.indexOf = function(searchElement, fromIndex) {
+		var k;
+		if (te(this, null) === true) {
+			throw new TypeError('"this" is null or not defined');
+		}
+		var o = Object(this);
+		var len = o.length >>> 0;
+		if (te(len, 0) === true) {
+			return -1;
+		}
+		var n = +fromIndex || 0;
+		if (te(Math.abs(n), Infinity)) {
+			n = 0;
+		}
+		if (n >= len) {
+			return -1;
+		}
+		k = Math.max(n >= 0 ? n : len - Math.abs(n), 0);
+		while (k < len) {
+			console.log(te(o[k], searchElement));
+			if (k in o && (te(o[k], searchElement) === true)) {
+				return k;
+			}
+			k++;
+		}
+		return -1;
+	};
+};
+
+
+var rewritePrototypes = function(obj) {
+	funcs = [
+		replaceArrayIndexOf,
+	];
+	for (let func of funcs) {
+		func(obj);
+	}
+};
+
+exports.rewritePrototypes = rewritePrototypes;

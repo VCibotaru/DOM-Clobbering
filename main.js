@@ -10,7 +10,6 @@ var webpage = require('webpage').create(),
 webpage.onConsoleMessage = function(message, line, file) {
 	logger.debugLog('message from browser: ' + message);
 };
-
 if (config.testMode === true) {
 	test.doTest();
 	slimer.exit();
