@@ -2,10 +2,12 @@
  * @module tracker
  */
 
-var DebuggerWrapper = require('debugger-wrapper').DebuggerWrapper,
-	config = require('config'),
-	logger = require('logger');
-
+var DebuggerWrapper = require('debugger-wrapper').DebuggerWrapper;
+var config = require('config');
+var	logger = require('logger');
+var proxy = require('proxy');
+var replacer = require('replacer');
+var mocks = require('mocks');
 /**
  * Tracks the creation of required element and links the Debugger with the Tainter.
  * @constructor
@@ -16,12 +18,19 @@ var DebuggerWrapper = require('debugger-wrapper').DebuggerWrapper,
  */
 var Tracker = function(win) {
 	this.win = win;
+	this.initBrowserContext();
+
 	this.dbg = new DebuggerWrapper(this, win);
-	this.elementCreated = false;
-
-
-
 	this.dbg.addDebuggee(win);	
+	
+	this.elementCreated = false;
+};
+
+Tracker.prototype.initBrowserContext = function() {
+	this.win.eval(proxy.importCode);
+	this.win.eval(replacer.importCode);
+	this.win.eval(mocks.importCode);
+	this.win.eval("mapMocksToObject(this);");
 };
 
 /**
@@ -32,23 +41,13 @@ Tracker.prototype.endCallback = function() {
 	logger.debugLog('Tracker finished');
 };
 
-/**
- * Checks whether the needed HTML element is already created.
- * @method
- * @this Tracker
- */
-Tracker.prototype.isElementCreated = function () {
-	if (this.elementCreated === true) {
-		// if the element was created during previous steps just return true
-		return true;
-	}
-	else if (this.win.document.forms[1] !== undefined) {
-		// if the element was created at this step change its name and return true
-		this.elementCreated = true;
-		return true;
+Tracker.prototype.isElementCreated = function() {
+	this.elementCreated = this.elementCreated || (this.win.document.forms[1] !== undefined);
+	return this.elementCreated;
+};
 
-	}
-	return false;
+Tracker.prototype.shouldRewriteFrame = function() {
+	return this.isElementCreated();
 };
 
 

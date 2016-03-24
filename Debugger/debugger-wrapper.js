@@ -30,7 +30,7 @@ var DebuggerWrapper = function (tracker, win) {
 		self.onEnterFrame.call(self, frame);
 	};
 	this.dbg.onDebuggerStatement = function() {
-		var evalResult = this.win.eval('storage.getTaintedNames();');
+		var evalResult = this.win.eval('__triple_equal__(1, 1);');
 		console.log(evalResult);
 	}.bind(this);
 
@@ -42,23 +42,21 @@ var DebuggerWrapper = function (tracker, win) {
  * @this DebuggerWrapper
  */
 DebuggerWrapper.prototype.onEnterFrame = function(frame) {
-	// Set wrapper around Debbuger.Frame.onStep handler.
-	if (this.elementCreated === false) {
-		let elementCreated = this.tracker.isElementCreated.call(this.tracker);
-		if (elementCreated === false) {
-			return;
-		}
-		this.elementCreated = true;
-		var code = proxy.importCode;
-		frame.eval(code);
-		// code = 'document.' + config.elementName + '= ObjectProxy(document.' + config.elementName + ', "taint_base");';
-		code = 'document.querySelector = ObjectProxy({"name": "querySelector"}, "taint_base");';
-		var obj = frame.eval(code);
-	}
-	// do the tainting here
-
+	this.currentFrame = frame;
+	// if (this.tracker.shouldInitContext() === true) {
+	// 	this.initBrowserContext();
+	// }
+	// if (this.tracker.shouldRewriteFrame() === true) {
+	// 	this.rewriteFrame(frame);
+	// }
 };
 
+DebuggerWrapper.prototype.initBrowserContext = function() {
+};
+
+DebuggerWrapper.prototype.rewriteFrame = function(frame) {
+	console.log('should rewrite frame');
+};
 
 DebuggerWrapper.prototype.addDebuggee = function(obj) {
 	this.dbg.addDebuggee(obj);

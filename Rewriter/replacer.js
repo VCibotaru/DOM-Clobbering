@@ -14,8 +14,6 @@
  *@module replacer 
  */
 
-var _ = require('underscore');
-
 var Syntax = {
 	Identifier: 'Identifier',
 	ExpressionStatement: 'ExpressionStatement',
@@ -105,7 +103,7 @@ copyObject(equalityOperatorNames, replacerNames);
  * @return - True if op is unary, else false
  */
 var isUnaryOperator = function(op) {
-	return _.has(unaryOperatorNames, op);
+	return (op in unaryOperatorNames); 
 };
 
 /**
@@ -115,7 +113,7 @@ var isUnaryOperator = function(op) {
  * @return - True if op is unary, else false
  */
 var isBinaryOperator = function(op) {
-	return _.has(binaryOperatorNames, op);
+	return (op in binaryOperatorNames); 
 };
 
 /**
@@ -125,7 +123,7 @@ var isBinaryOperator = function(op) {
  * @return - True if op is an equality operator, else false
  */
 var isEqualityOperator = function(op) {
-	return _.has(equalityOperatorNames, op);
+	return (op in equalityOperatorNames); 
 };
 /**
  * Checks if the object is a function.
@@ -134,7 +132,7 @@ var isEqualityOperator = function(op) {
  * @return - True if func is a function, else false
  */
 var isFunction = function(func) {
-	return _.has(functionNames, func);
+	return (func in functionNames); 
 };
 
 /**
@@ -263,6 +261,37 @@ var createAllReplacers = function() {
 	return replacers;
 };
 
+var importCode = "";
+var arrayImports = [
+	"Syntax",
+	"unaryOperatorNames",
+	"binaryOperatorNames",
+	"equalityOperatorNames",
+	"functionNames",
+	"replacerNames",
+];
+var funcImports = [
+	"isUnaryOperator",
+	"isBinaryOperator",
+	"isFunction",
+	"isEqualityOperator",
+	"Replacer",
+	"UnaryOperatorReplacerFactory",
+	"BinaryOperatorReplacerFactory",
+	"FunctionReplacerFactory",
+	"createAllReplacers",
+];
+
+var functionDefToCode = require('misc').functionDefToCode;
+var variableDefToCode = require('misc').variableDefToCode;
+
+for (let i of arrayImports) {
+	importCode += variableDefToCode(this[i], i);
+}
+for (let i of funcImports) {
+	importCode += functionDefToCode(this[i], i);
+}
+importCode += "var replacers = createAllReplacers();";
 
 /** The array containing all replacers*/
 exports.replacers = createAllReplacers();
@@ -271,3 +300,4 @@ exports.isUnaryOperator = isUnaryOperator;
 exports.isBinaryOperator = isBinaryOperator;
 exports.isFunction = isFunction;
 exports.isEqualityOperator = isEqualityOperator;
+exports.importCode = importCode;

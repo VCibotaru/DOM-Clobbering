@@ -257,7 +257,7 @@ var FunctionProxy = ProxyFactory(
 		{proxyTypeKey: 'function'}
 );
 
-/*
+/**
  * Return the wrapped object from a proxy.
  * If the proxy is wrapped around a primitive value then it returns the primitive value.
  * @function
@@ -273,18 +273,67 @@ var getWrappedObject = function(pr) {
 	return pr[wrappedObjectKey].valueOf();
 };
 
-// the code which if evaled import this module
-var importCode = "" +
-"var stringValueKey = '__string_value_key';" + 
-"var objectNameKey = '__object_descriptor_key';" +
-"var ProxyStorage = " + ProxyStorage + ";" + 
-"var storage = new ProxyStorage();" +
-"var HandlerFactory = " + HandlerFactory + ";" +
-"var ProxyFactory = " + ProxyFactory + ";" +
-"var StringProxy = ProxyFactory(function(string){return new String(string);}, {});" +
-"var ObjectProxy = ProxyFactory(function(object){return object;}, {}); "; 
+
+var variableDefToCode = require('misc').variableDefToCode;
+var functionDefToCode = require('misc').functionDefToCode;
+
+// the code which if evaled imports the whole module
+var importCode = "";
+var stringImports = [
+	"stringValueKey", 
+	"objectNameKey", 
+	"untaintedObjectNamesKey",
+	"wrappedObjectKey",
+	"proxyTypeKey",
+];
+var funcImports = [
+	"ProxyStorage",
+	"getProxyConstructorForObject",
+	"buildProxy",
+	"HandlerFactory",
+	"ProxyFactory",
+	"getWrappedObject",
+];
+
+for (let i of stringImports) {
+	importCode += variableDefToCode(this[i], i);
+}
+
+for (let i of funcImports) {
+	importCode += functionDefToCode(this[i], i);
+}
+
+importCode += "var storage = new ProxyStorage();";
+importCode += "" + 
+"var StringProxy = ProxyFactory(" +
+"function(string) {return new String(string);}," +
+"{proxyTypeKey: 'string'}" +
+");" +
+"var ObjectProxy = ProxyFactory(" +
+"function(object) {return object;}," +
+"{proxyTypeKey: 'object'}" +
+");" +
+"var NumberProxy = ProxyFactory(" +
+"function(number) {return new Number(number);}," +
+"{proxyTypeKey: 'number'}" +
+");" +
+"var BooleanProxy = ProxyFactory(" +
+"function(bool) {return new Boolean(bool);}," +
+"{proxyTypeKey: 'boolean'}" +
+");" +
+"var FunctionProxy = ProxyFactory(" +
+"function(func) {return func;}," +
+"{proxyTypeKey: 'function'}" +
+");"; 
+
+importCode += "" +
+"var isObjectTainted = ProxyStorage.prototype.isObjectTainted.bind(storage);" +
+"var clearTaintedObjects = ProxyStorage.prototype.clearTaintedObjects.bind(storage);" +
+"var getTaintedNames = ProxyStorage.prototype.getTaintedNames.bind(storage);" +
+"";
 
 exports.importCode = importCode;
+
 
 exports.getWrappedObject = getWrappedObject;
 exports.buildProxy = buildProxy;

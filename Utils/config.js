@@ -2,6 +2,7 @@
 
 
 var parseArgs = require('minimist');
+
 /**
  * Represents a configuration of the current launch.
  * @constructor

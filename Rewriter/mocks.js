@@ -8,8 +8,10 @@
  * @module mocks
  */
 
-var proxy = require('proxy');
-var names = require('replacer').replacerNames;
+var getWrappedObject = require('proxy').getWrappedObject;
+var buildProxy = require('proxy').buildProxy;
+var isObjectTainted = require('proxy').isObjectTainted;
+var replacerNames = require('replacer').replacerNames;
 var isUnaryOperator = require('replacer').isUnaryOperator;
 var isBinaryOperator = require('replacer').isBinaryOperator;
 var isFunction = require('replacer').isFunction;
@@ -25,9 +27,9 @@ var UnaryOperatorMockFactory = function(op) {
 	// build new function that incapsulates the operator
 	let opFunc = new Function('x', 'return ' + op + ' x;');
 	let resultFunc = function(obj) {
-		if (proxy.isObjectTainted(obj) === true) {
-			obj = proxy.getWrappedObject(obj);
-			return proxy.buildProxy(opFunc(obj), 'new_obj_from_op:_' + op);
+		if (isObjectTainted(obj) === true) {
+			obj = getWrappedObject(obj);
+			return buildProxy(opFunc(obj), 'new_obj_from_op:_' + op);
 		}
 		return opFunc(obj);
 	};
@@ -44,16 +46,16 @@ var BinaryOperatorMockFactory = function(op) {
 	// build new function that incapsulates the operator
 	let opFunc = new Function('x', 'y', 'return x ' + op + ' y;');
 	let resultFunc = function(left, right) {
-		let l = proxy.isObjectTainted(left);
-		let r = proxy.isObjectTainted(right);
+		let l = isObjectTainted(left);
+		let r = isObjectTainted(right);
 		if (l === true) {
-			left = proxy.getWrappedObject(left); 
+			left = getWrappedObject(left); 
 		}
 		if (r === true) {
-			right = proxy.getWrappedObject(right); 
+			right = getWrappedObject(right); 
 		}
 		if (l === true || r === true) {
-			return proxy.buildProxy(opFunc(left,right), 'new_obj_from_op:_' + op); 
+			return buildProxy(opFunc(left,right), 'new_obj_from_op:_' + op); 
 		}
 		return opFunc(left, right);
 	};
@@ -73,9 +75,9 @@ var FunctionMockFactory = function(funcName) {
 	// I shall think on how to implement this factory in a better way
 	let func = new Function('x', 'return ' + funcName + '(x)');
 	let resultFunc = function(obj) {
-		if (proxy.isObjectTainted(obj) === true) {
-			obj = proxy.getWrappedObject(obj);
-			return proxy.buildProxy(func(obj), 'new_obj_from_op:_' + funcName);
+		if (isObjectTainted(obj) === true) {
+			obj = getWrappedObject(obj);
+			return buildProxy(func(obj), 'new_obj_from_op:_' + funcName);
 		}
 		return func(obj);
 	};
@@ -90,16 +92,16 @@ var FunctionMockFactory = function(funcName) {
  * @param {string} op - String representation of the operator (e.g. '===') 
  * @return - The mock.
  */
-var EqualityMockFactory = function(op) {
+var EqualityOperatorMockFactory = function(op) {
 	let opFunc = new Function('x', 'y', 'return x ' + op + ' y;');
 	let resultFunc = function(left, right) {
-		let l = proxy.isObjectTainted(left);
-		let r = proxy.isObjectTainted(right);
+		let l = isObjectTainted(left);
+		let r = isObjectTainted(right);
 		if (l === true) {
-			left = proxy.getWrappedObject(left); 
+			left = getWrappedObject(left); 
 		}
 		if (r === true) {
-			right = proxy.getWrappedObject(right); 
+			right = getWrappedObject(right); 
 		}
 		// The result here is NOT TAINTED!!!
 		return opFunc(left, right);
@@ -121,10 +123,10 @@ var mapMocksToObject = function(obj) {
 	let factories = {
 		'unary'    : UnaryOperatorMockFactory,
 		'binary'   : BinaryOperatorMockFactory,
-		'equality' : EqualityMockFactory,
+		'equality' : EqualityOperatorMockFactory,
 		'function' : FunctionMockFactory,
 	};
-	for (let name in names) {
+	for (let name in replacerNames) {
 		let factory;
 		// select the needed factory depending on the name type
 		for (let type in predicates) {
@@ -134,11 +136,27 @@ var mapMocksToObject = function(obj) {
 			}
 		}
 		if (factory === undefined) {
-			throw 'Unknown type in mocks.mapMocksToObject';
+			throw 'Unknown type in mocks.mapMocksToObject' + name;
 		}
 		let mock = factory(name);
-		obj[names[name]] = mock;
+		obj[replacerNames[name]] = mock;
 	}
 };
 
+var functionDefToCode = require('misc').functionDefToCode;
+var importCode = "";
+
+var funcImports = [
+	"UnaryOperatorMockFactory",
+	"BinaryOperatorMockFactory",
+	"EqualityOperatorMockFactory",
+	"FunctionMockFactory",
+	"mapMocksToObject",
+];
+
+for (let i of funcImports) {
+	importCode += functionDefToCode(this[i], i);
+};
+
+exports.importCode = importCode;
 exports.mapMocksToObject = mapMocksToObject;
