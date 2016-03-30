@@ -17,6 +17,10 @@ var isBinaryOperator = require('replacer').isBinaryOperator;
 var isFunction = require('replacer').isFunction;
 var isEqualityOperator = require('replacer').isEqualityOperator;
 
+// this is needed to distinguish mocked functions from the others
+// in the debugger's code
+var mockFunctionKey = '__is_mock_function__';
+
 /**
  * Builds mocks for unary operators.
  * @function UnaryOperatorMockFactory
@@ -26,6 +30,8 @@ var isEqualityOperator = require('replacer').isEqualityOperator;
 var UnaryOperatorMockFactory = function(op) {
 	// build new function that incapsulates the operator
 	let opFunc = new Function('x', 'return ' + op + ' x;');
+	// mark as mocked
+	opFunc[mockFunctionKey] = true;
 	let resultFunc = function(obj) {
 		if (isObjectTainted(obj) === true) {
 			obj = getWrappedObject(obj);
@@ -33,6 +39,8 @@ var UnaryOperatorMockFactory = function(op) {
 		}
 		return opFunc(obj);
 	};
+	// mark as mocked
+	resultFunc[mockFunctionKey] = true;
 	return resultFunc;
 };
 
@@ -45,6 +53,8 @@ var UnaryOperatorMockFactory = function(op) {
 var BinaryOperatorMockFactory = function(op) {
 	// build new function that incapsulates the operator
 	let opFunc = new Function('x', 'y', 'return x ' + op + ' y;');
+	// mark as mocked
+	opFunc[mockFunctionKey] = true;
 	let resultFunc = function(left, right) {
 		let l = isObjectTainted(left);
 		let r = isObjectTainted(right);
@@ -55,10 +65,12 @@ var BinaryOperatorMockFactory = function(op) {
 			right = getWrappedObject(right); 
 		}
 		if (l === true || r === true) {
-			return buildProxy(opFunc(left,right), 'new_obj_from_op:_' + op); 
+			return buildProxy(opFunc(left,right), 'new_obj_from_op:' + op); 
 		}
 		return opFunc(left, right);
 	};
+	// mark as mocked
+	resultFunc[mockFunctionKey] = true;
 	return resultFunc;
 };
 
@@ -144,8 +156,10 @@ var mapMocksToObject = function(obj) {
 };
 
 var functionDefToCode = require('misc').functionDefToCode;
+var variableDefToCode = require('misc').variableDefToCode;
 var importCode = "";
 
+importCode += variableDefToCode(mockFunctionKey, "mockFunctionKey");
 var funcImports = [
 	"UnaryOperatorMockFactory",
 	"BinaryOperatorMockFactory",
@@ -156,7 +170,10 @@ var funcImports = [
 
 for (let i of funcImports) {
 	importCode += functionDefToCode(this[i], i);
-};
+}
+
+// importCode += "mapMocksToObject(this);";
 
 exports.importCode = importCode;
 exports.mapMocksToObject = mapMocksToObject;
+exports.mockFunctionKey = mockFunctionKey;

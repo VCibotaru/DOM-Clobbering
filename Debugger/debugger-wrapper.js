@@ -3,9 +3,10 @@
  */
 require('debugger').addDebuggerToGlobal(this);
 
-var logger = require('logger'),
-	config = require('config'),
-	proxy = require('proxy');
+var logger = require('logger');
+var	config = require('config');
+var	proxy = require('proxy');
+
 /**
  * A wrapper for the debugger provided my Mozilla.
  * @constructor
@@ -30,7 +31,7 @@ var DebuggerWrapper = function (tracker, win) {
 		self.onEnterFrame.call(self, frame);
 	};
 	this.dbg.onDebuggerStatement = function() {
-		var evalResult = this.win.eval('__triple_equal__(1, 1);');
+		var evalResult = this.win.eval('a');
 		console.log(evalResult);
 	}.bind(this);
 
@@ -38,20 +39,24 @@ var DebuggerWrapper = function (tracker, win) {
 
 /**
  * A wrapper around Debugger.onEnterFrame handler.
+ * For some frames (see Tracker.shouldRewriteFrame)
+ * rewrites their code. This is done by stopping the
+ * execution of current frame, launching its
+ * rewritten (and marked) version and returning the
+ * result of rewritten version.
+ * See resumption values at 
+ * {@link https://developer.mozilla.org/en-US/docs/Tools/Debugger-API/Conventions}
  * @method
  * @this DebuggerWrapper
  */
 DebuggerWrapper.prototype.onEnterFrame = function(frame) {
-	this.currentFrame = frame;
-	// if (this.tracker.shouldInitContext() === true) {
-	// 	this.initBrowserContext();
-	// }
-	// if (this.tracker.shouldRewriteFrame() === true) {
-	// 	this.rewriteFrame(frame);
-	// }
-};
-
-DebuggerWrapper.prototype.initBrowserContext = function() {
+	if (this.tracker.shouldRewriteFrame(frame) === true) {
+		let source = frame.script.source.text;
+		let	newSource = require('rewriter').rewrite(source);
+		let markedNewSource = this.tracker.markFrameCode(newSource);
+		let res = frame.eval(markedNewSource);
+		return res;
+	}
 };
 
 DebuggerWrapper.prototype.rewriteFrame = function(frame) {
