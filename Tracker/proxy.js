@@ -12,6 +12,16 @@ var stringValueKey = '__string_value__';
 
 var objectNameKey = '__object_name__';
 
+/**
+ * Returns the name of the object assigned by the tainting system
+ * @function getTaintedName
+ * @param {object} obj - the proxy
+ * @return - the name of the wrapped object
+ */
+var getTaintedName = function(obj) {
+	return obj[objectNameKey];
+};
+
 // proxy[untaintedObjectNamesKey] == the set of the properties of the object
 // that are not tainted (e.g., they were assigned after the initial taint of the object)
 var untaintedObjectNamesKey = '__untainted_objects__'; 
@@ -60,7 +70,7 @@ var ProxyStorage = function() {
 	 */
 	ProxyStorage.prototype.getTaintedNames = function() {
 		let tmp = Array.from(this.tainted);
-		return tmp.map(function(obj) {return obj[objectNameKey];});
+		return tmp.map(getTaintedName);
 	};
 
 	/**
@@ -148,7 +158,7 @@ var HandlerFactory = function(customActions) {
 					 return target[name];
 				 }
 				 // else wrap it in a proxy, and return the proxy
-				 let newName = target[objectNameKey] + '.' + name;
+				 let newName = getTaintedName(target) + '.' + name;
 				 return buildProxy(target[name], newName);
 			 },
 		set: function(target, property, value, receiver) {
@@ -293,6 +303,7 @@ var funcImports = [
 	"HandlerFactory",
 	"ProxyFactory",
 	"getWrappedObject",
+	"getTaintedName",
 ];
 
 for (let i of stringImports) {
@@ -340,3 +351,4 @@ exports.buildProxy = buildProxy;
 exports.isObjectTainted = ProxyStorage.prototype.isObjectTainted.bind(storage);
 exports.clearTaintedObjects = ProxyStorage.prototype.clearTaintedObjects.bind(storage);
 exports.getTaintedNames = ProxyStorage.prototype.getTaintedNames.bind(storage);
+exports.getTaintedName = getTaintedName;

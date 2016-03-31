@@ -16,6 +16,7 @@ var isUnaryOperator = require('replacer').isUnaryOperator;
 var isBinaryOperator = require('replacer').isBinaryOperator;
 var isFunction = require('replacer').isFunction;
 var isEqualityOperator = require('replacer').isEqualityOperator;
+var getTaintedName = require('proxy').getTaintedName;
 
 // this is needed to distinguish mocked functions from the others
 // in the debugger's code
@@ -35,7 +36,8 @@ var UnaryOperatorMockFactory = function(op) {
 	let resultFunc = function(obj) {
 		if (isObjectTainted(obj) === true) {
 			obj = getWrappedObject(obj);
-			return buildProxy(opFunc(obj), 'new_obj_from_op:_' + op);
+			let name = op + '(' + getTaintedName(obj) + ')';
+			return buildProxy(opFunc(obj), name);
 		}
 		return opFunc(obj);
 	};
@@ -58,14 +60,24 @@ var BinaryOperatorMockFactory = function(op) {
 	let resultFunc = function(left, right) {
 		let l = isObjectTainted(left);
 		let r = isObjectTainted(right);
+		let leftName, rigthName;
 		if (l === true) {
+			leftName = getTaintedName(left);
 			left = getWrappedObject(left); 
 		}
+		else {
+			leftName = 'value(' + left.toString() + ')';
+		}
 		if (r === true) {
+			rightName = getTaintedName(right);
 			right = getWrappedObject(right); 
 		}
+		else {
+			rightName = 'value(' + right.toString() + ')';
+		}
 		if (l === true || r === true) {
-			return buildProxy(opFunc(left,right), 'new_obj_from_op:' + op); 
+			let name = op + '(' + leftName + ',' + rightName + ')';
+			return buildProxy(opFunc(left,right), name);
 		}
 		return opFunc(left, right);
 	};
@@ -89,7 +101,8 @@ var FunctionMockFactory = function(funcName) {
 	let resultFunc = function(obj) {
 		if (isObjectTainted(obj) === true) {
 			obj = getWrappedObject(obj);
-			return buildProxy(func(obj), 'new_obj_from_op:_' + funcName);
+			let name = funcName + '(' + getTaintedName(obj) + ')';
+			return buildProxy(func(obj), name);
 		}
 		return func(obj);
 	};

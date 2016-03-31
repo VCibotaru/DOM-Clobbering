@@ -24,21 +24,35 @@ var Tracker = function(win) {
 	this.dbg.addDebuggee(win);	
 	
 	this.elementCreated = false;
+	this.taintStarted = false;
 };
 
 Tracker.prototype.initBrowserContext = function() {
 	this.win.eval(this.markFrameCode(proxy.importCode));
 	this.win.eval(this.markFrameCode(replacer.importCode));
 	this.win.eval(this.markFrameCode(mocks.importCode));
-	this.win.eval(this.markFrameCode("mapMocksToObject(this);"));
+	this.win.eval(this.markFrameCode("this.mapMocksToObject(this);"));
 };
 
 /**
- * Gets called when the Tracker finishes its work.
+ * Returns the results of taint analysis.
  * @method
+ * @this Tracker
+ * @return - an array of tainted names
  */
-Tracker.prototype.endCallback = function() {
-	logger.debugLog('Tracker finished');
+Tracker.prototype.getResults = function() {
+	let code = this.markFrameCode('storage.getTaintedNames()');
+	let result = this.win.eval(code);
+	let names = Set(result);
+	if (names.size === 0) {
+		return 'No tainted objects!';
+	}
+	let str = 'Tainted objects:\n';
+	for (let name of names) {
+		str += name + '\n';
+	}
+	str += '===============================';
+	return str;	
 };
 
 var mockFunctionKey = require('mocks').mockFunctionKey;
@@ -70,11 +84,11 @@ var isFrameMocked = function(frame) {
  * @return - a boolean value
  */
 Tracker.prototype.shouldRewriteFrame = function(frame) {
-	let shouldTaint = (this.shouldTaint() === true);
+	let shouldNotTaint = (this.shouldTaint() !== true);
 	let isMock = (isFrameMocked(frame) === true);
 	let source = frame.script.source.text;
 	let isMarked = (this.isFrameCodeMarked(source) === true);
-	return ((isMock || isMarked || shouldTaint) === false);
+	return ((isMock || isMarked || shouldNotTaint) === false);
 };
 
 /**
@@ -95,7 +109,7 @@ Tracker.prototype.isElementCreated = function() {
  * @return - a boolean value
  */ 
 Tracker.prototype.shouldStartTaint = function() {
-	return (this.elementCreated === false && this.isElementCreated() === true);
+	return (this.taintStarted === false && this.isElementCreated() === true);
 };
 
 /**
@@ -132,6 +146,22 @@ Tracker.prototype.isFrameCodeMarked = function(code) {
 	return (code.indexOf(SECRET_TOKEN) === 0);
 };
 
+/**
+ * Starts the taint process by replacing the HTML element with a proxy
+ * @method
+ * @this Tracker
+ */
+Tracker.prototype.startTaint = function() {
+	this.taintStarted = true;
+	let name = config.elementName;
+	let code = "" +
+	"document." + name + " = " +
+	// "buildProxy(document." + name + ", 'base');" +
+	"buildProxy({'name':'querySelector'}, 'base');" +
+	"";	
+	code = this.markFrameCode(code);	
+	let res = this.win.eval(code);
+};
 
 /** The Tracker class*/
 exports.Tracker = Tracker;

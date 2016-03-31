@@ -1,11 +1,12 @@
 require('context-monitor');
 
-var webpage = require('webpage').create(),
-	dispatcher = require('dispatcher'),
-	config = require('config'),
-	Tracker = require('tracker').Tracker,
-	logger = require('logger'),
-	test = require('test-runner');
+var webpage = require('webpage').create();
+var	dispatcher = require('dispatcher');
+var	config = require('config');
+var	Tracker = require('tracker').Tracker;
+var	logger = require('logger');
+var	test = require('test-runner');
+var tracker;
 
 webpage.onConsoleMessage = function(message, line, file) {
 	logger.debugLog('message from browser: ' + message);
@@ -16,7 +17,10 @@ if (config.testMode === true) {
 }
 else {
 	dispatcher.onWindowCreated(function(win) {
-		var tracker = new Tracker(win);
+		tracker = new Tracker(win);
 	});
-	webpage.open(config.url, function() {});
+	webpage.open(config.url, function() {
+		let res = tracker.getResults();
+		console.log(res);
+	});
 }

@@ -14,7 +14,7 @@ var Config = function() {
 	this.args = parseArgs(require('system').args.slice(1));
 	this.url = this.args.url;
 	this.DEBUG = true;
-	this.elementName = this.args.tainted_name;
+	this.elementName = this.args.taint_name;
 	this.testMode = this.args.test;
 };
 

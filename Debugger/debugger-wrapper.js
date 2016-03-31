@@ -30,10 +30,11 @@ var DebuggerWrapper = function (tracker, win) {
 	this.dbg.onEnterFrame = function(frame) {
 		self.onEnterFrame.call(self, frame);
 	};
-	this.dbg.onDebuggerStatement = function() {
-		var evalResult = this.win.eval('a');
-		console.log(evalResult);
-	}.bind(this);
+
+	// this.dbg.onDebuggerStatement = function() {
+	// 	console.log('on dbg:');
+	// 	console.log(this.tracker.getResults());
+	// }.bind(this);
 
 };
 
@@ -50,6 +51,11 @@ var DebuggerWrapper = function (tracker, win) {
  * @this DebuggerWrapper
  */
 DebuggerWrapper.prototype.onEnterFrame = function(frame) {
+	if (this.tracker.shouldStartTaint() === true) {
+		// this is the first frame in which the HTML element is live
+		// so, here the tainting process should be started
+		this.tracker.startTaint();	
+	}
 	if (this.tracker.shouldRewriteFrame(frame) === true) {
 		let source = frame.script.source.text;
 		let	newSource = require('rewriter').rewrite(source);
