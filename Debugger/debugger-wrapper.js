@@ -25,16 +25,7 @@ var DebuggerWrapper = function (tracker, win) {
 
 	this.elementCreated = false;
 
-	// Gets called when debugger enters a new frame
-	// Calls DebuggerWrapper.onEnterFrame with this=self.
-	this.dbg.onEnterFrame = function(frame) {
-		self.onEnterFrame.call(self, frame);
-	};
-
-	// this.dbg.onDebuggerStatement = function() {
-	// 	console.log('on dbg:');
-	// 	console.log(this.tracker.getResults());
-	// }.bind(this);
+	this.dbg.onEnterFrame = DebuggerWrapper.prototype.onEnterFrame.bind(this);
 
 };
 
