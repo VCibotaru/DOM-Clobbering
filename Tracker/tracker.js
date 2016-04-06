@@ -157,13 +157,16 @@ Tracker.prototype.isFrameCodeMarked = function(code) {
 Tracker.prototype.startTaint = function() {
 	this.taintStarted = true;
 	let name = config.elementName;
+	let xpath = config.xpath;
 	let code = "" +
+	"var element = document.evaluate('" + 
+	xpath +
+	"' , document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);" +
 	"document." + name + " = " +
 	"buildProxy(document.forms[1], 'base');" +
-	// "buildProxy({'name':'querySelector'}, 'base');" +
 	"";	
 	code = this.markFrameCode(code);	
-	let res = this.win.eval(code);
+	this.win.eval(code);
 };
 
 /** The Tracker class*/

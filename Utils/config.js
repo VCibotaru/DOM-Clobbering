@@ -16,6 +16,7 @@ var Config = function() {
 	this.DEBUG = true;
 	this.elementName = this.args.taint_name;
 	this.testMode = this.args.test;
+	this.xpath = '//form[2]';
 };
 
 
