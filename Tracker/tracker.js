@@ -161,9 +161,9 @@ Tracker.prototype.startTaint = function() {
 	let code = "" +
 	"var element = document.evaluate('" + 
 	xpath +
-	"' , document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);" +
+	"' , document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;" +
 	"document." + name + " = " +
-	"buildProxy(document.forms[1], 'base');" +
+	"buildProxy(element, 'base');" +
 	"";	
 	code = this.markFrameCode(code);	
 	this.win.eval(code);

@@ -17,6 +17,7 @@ var Config = function() {
 		let f = fs.read(this.args.config_file);
 		conf = JSON.parse(f);
 	}
+	this.xpath = conf.xpath;
 	this.url = conf.url;
 	this.elementName = conf.taint_name;
 	this.testMode = conf.test;
