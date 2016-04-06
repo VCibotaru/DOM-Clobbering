@@ -29,8 +29,6 @@ var untaintedObjectNamesKey = '__untainted_objects__';
 // proxy[wrappedObjectKey] == the object wrapped by the proxy
 var wrappedObjectKey = '__wrapped_object__';
 
-// proxy[proxyTypeKey] == the type of the proxy (e.g., StringProxy, NumberProxy, ...)
-var proxyTypeKey = '__proxy_type__';
 /**
  * A class for storing the results of the tainting.
  * @constructor
@@ -86,186 +84,130 @@ var ProxyStorage = function() {
 var storage = new ProxyStorage();
 
 /**
- * Returns a proxy constructor corresponding to object's type.
- * @function getProxyConstructorForObject
- * @param {Object} obj - The object.
- * @return A constructor or a trivial function that returns undefined.
- */
-var getProxyConstructorForObject = function(obj) {
-	let actions = {
-		'string': StringProxy,
-		'object': ObjectProxy,
-		'undefined': function() {return undefined;},
-		'number': NumberProxy,
-		'boolean': BooleanProxy,
-		'null': function() {return null;},
-		'function': FunctionProxy,
-	};
-	let type = typeof obj;
-	if (type in actions) {
-		return actions[type];
-	}
-	throw 'Unknown type in BaseHandler.get(): ' + type;
-};
-
-/**
- * Creates a proxy of one of the special types (StringProxy, ...)
- * depending on the object's type.
+ * Creates a proxy object.
+ * To add a workaround for non-configurable and non-writable 
+ * properties handling, the proxy is wrapped around a dummy 
+ * shadow object (see {@link https://github.com/tvcutsem/harmony-reflect/issues/25}).
  * @function buildProxy
  * @param {Object} obj - The object to be wrapped with a proxy.
  * @param {String} name - See proxy[objectNameKey].
  * @return - A proxy object.
  */
-var buildProxy = function(obj, name) {
-	// return different proxies depending on the object type
-	let proxyConstructor = getProxyConstructorForObject(obj);
-	return proxyConstructor(obj, name);
+var buildProxy = function(object, name) {
+	// let objectWrapper = objectConstructor(object);
+	let objectWrapper = {};
+	if (typeof object === 'function') {
+		// If the object is a function, then the proxy is wrapped around it,
+		// not the shadow object.
+		// This is done for keeping the proxy object callable. If we will do
+		// something like proxy = Proxy({}, handler), then the code "proxy()"
+		// will raise a "Not a function error". Another workaround would be
+		// to try to make the {} object callable, but it appears not possible. 
+		// The downside of our approach is that we will be able to return 
+		// wrapped non-configurable and non-writable properties for function
+		// objects. There is only two of them actually (name and length).
+		objectWrapper = object;
+	}
+	let handler = buildHandler();
+
+	// do the objectWrapper initialization
+	objectWrapper[objectNameKey] = name;
+	objectWrapper[untaintedObjectNamesKey] = new Set();
+	objectWrapper[wrappedObjectKey] = object;
+
+	//TODO: add some more custom fields initialization
+	let proxy = new Proxy(objectWrapper, handler);
+	storage.addTaintedObject(proxy);
+	return proxy; 
 };
 
 /**
  * Creates a handler for a proxy.
- * @function HandlerFactory
+ * @function buildHandler
  * @param {Object} customActions - The object that stores key-value pairs of form
  * {name:action}, where action is a function that shall be called in the proxy's getter
  * for the property with corresponding name.
  * @return Proxy handle
  * @see {@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy/handler | handlers}
  */
-var HandlerFactory = function(customActions) {
-
+var buildHandler = function() {
 	let handler = {
 		get: function(target, name, receiver) {
-				 // call the custom action if specified
-				 if (customActions.hasOwnProperty(name)) {
-					 return customActions[name]();
-				 }
-				 // the following properties correspond to metadata stored on object
-				 let metanames = [objectNameKey, untaintedObjectNamesKey, wrappedObjectKey];
-				 if (metanames.indexOf(name) !== -1) {
-					 return target[name];
-				 }
-				 // if toString or valueOf methods are called, then we need to 
-				 // pass the call to the primitive value stored, not to the wrapper
-				 if (name === 'toString' || name === 'valueOf') {
-					 let obj = getWrappedObject(target);
-					 let val = obj[name](); 
-					 return function() {return val;};
-				 }
-				 // the following properties correspond to object's data
+			// the following properties correspond to metadata stored on object
+			let metanames = [objectNameKey, untaintedObjectNamesKey, wrappedObjectKey];
+			if (metanames.indexOf(name) !== -1) {
+				return target[name];
+			}
+			let wrappedObject = getWrappedObject(target);
+			// if toString or valueOf methods are called, then we need to 
+			// pass the call to the primitive value stored, not to the wrapper
+			if (name === 'toString' || name === 'valueOf') {
+				let val = wrappedObject[name](); 
+				return function() {return val;};
+			}
+			// the following properties correspond to object's data
+			
+			// if target[name] is untainted then return it
+			if (target[untaintedObjectNamesKey].has(name)) {
+				return wrappedObject[name];
+			}
+			// else wrap it in a proxy, and return the proxy
+			let newName = getTaintedName(target) + '.' + name;
+			
+			// if property is not configurable and not writable,
+			// then some more black magic is needed
+			let pd = Object.getOwnPropertyDescriptor(wrappedObject, name);
+			if (pd !== undefined && !pd.configurable && !pd.writable) {
+				if (typeof wrappedObject === 'function') {
+					// if the wrappedObject is a function, then return
+					// non-wrapped value of the property.
+					// See buildProxy code for explanation.
+					return wrappedObject[name];
+				}
 
-				 // if target[name] is untainted then return it
-				 if (target[untaintedObjectNamesKey].has(name)) {
-					 return target[name];
-				 }
-				 // else wrap it in a proxy, and return the proxy
-				 let newName = getTaintedName(target) + '.' + name;
-				 return buildProxy(target[name], newName);
-			 },
+				// see buildProxy comment for explanation of the code below
+				Object.defineProperty(target, name, {
+					value: buildProxy(wrappedObject[name], newName),
+					writable: false,
+					configurable: false,
+					enumerable: pd.enumerable
+				});
+				return target[name];
+			}
+			return buildProxy(wrappedObject[name], newName);
+		},
 		set: function(target, property, value, receiver) {
-				 if (storage.isObjectTainted(value) === false) {
-					 // if value is not tainted
-					 target[untaintedObjectNamesKey].add(property);
-				 }
-				 else {
-					 // if value is tainted
-					 target[untaintedObjectNamesKey].delete(property);
-				 }
-				 target[property] = value;
-			 },
+			if (storage.isObjectTainted(value) === false) {
+				// if value is not tainted
+				target[untaintedObjectNamesKey].add(property);
+			}
+			else {
+				// if value is tainted
+				target[untaintedObjectNamesKey].delete(property);
+			}
+			let wrappedObject = getWrappedObject(target);
+			wrappedObject[property] = value;
+		},
 		apply: function(target, thisArg, argsList) {
-				   let result = target.apply(thisArg, argsList);
-				   // HERE we always taint the result.
-				   // However, there is another option: to not do this and let the 
-				   // code itself taint the result or not.
-				   let proxyConstructor = getProxyConstructorForObject(result);
-				   // TODO:
-				   // let objName = `${target[objectNameKey]}.apply(${thisArg},${argsList})`;
-				   let objName = `${target[objectNameKey]}.apply()`;
-				   let proxy = proxyConstructor(result, objName);
-				   return proxy;
-			   }			
+			let wrappedObject = getWrappedObject(target);
+			let result = wrappedObject.apply(thisArg, argsList);
+			// HERE we always taint the result.
+			// However, there is another option: to not do this and let the 
+			// code itself taint the result or not.
+			// TODO:
+			// let objName = `${target[objectNameKey]}.apply(${thisArg},${argsList})`;
+			let objName = `${target[objectNameKey]}.apply()`;
+			let proxy = buildProxy(result, objName);
+			return proxy;
+		},
+		has: function(target, prop) {
+			let wrappedObject = getWrappedObject(target);
+			return prop in wrappedObject;
+		}
 
 	};
 	return handler;
 };
-
-/**
- * A factory for proxy creation.
- * @function ProxyFactory
- * @param {Function} objectConstructor - The function that constructs a wrapper for 
- * the object, if the object is of a primitive type (string, number, boolean).
- * Else it may just return the object unmodified.
- * @param {Object} customActions - The custom actions needed for proxy handler's 
- * get function. See {@link HandlerFactory}.
- * @return A function that when called returns the needed proxy object.
- */
-var ProxyFactory = function(objectConstructor, customActions) {
-	let proxyBuilder = function(object, name) {
-		let objectWrapper = objectConstructor(object);
-		let handler = HandlerFactory(customActions);
-
-		// do the objectWrapper initialization
-		objectWrapper[objectNameKey] = name;
-		objectWrapper[untaintedObjectNamesKey] = new Set();
-		objectWrapper[wrappedObjectKey] = object;
-
-		//TODO: add some more custom fields initialization
-		let pr = new Proxy(objectWrapper, handler);
-		storage.addTaintedObject(pr);
-		return pr; 
-	};
-	return proxyBuilder;
-};
-
-/**
- * A constructor of proxies for string primitive values.
- * It wraps the primitive value inside a String object.
- * This is needed because the proxies can't be used with primitive values.
- * @function StringProxy.
- */
-var StringProxy = ProxyFactory(
-		// TODO: change the toString implementation to make eval() work
-		function(string) {return new String(string);},
-		{proxyTypeKey: 'string'}
-		);
-
-/**
- * A constructor of proxies for values of the Object type.
- * @function ObjectProxy
- */
-var ObjectProxy = ProxyFactory(
-		function(object) {return object;},
-		{proxyTypeKey: 'object'}
-);
-
-/**
- * A constructor of proxies for number primitive values.
- * It wraps the primitive value inside a Number object.
- * This is needed because the proxies can't be used with primitive values.
- * @function NumberProxy.
- */
-var NumberProxy = ProxyFactory(
-		function(number) {return new Number(number);},
-		{proxyTypeKey: 'number'}
-		// TODO: work on number here
-);
-
-/**
- * A constructor of proxies for boolean primitive values.
- * It wraps the primitive value inside a Boolean object.
- * This is needed because the proxies can't be used with primitive values.
- * @function BooleanProxy.
- */
-var BooleanProxy = ProxyFactory(
-		function(bool) {return new Boolean(bool);},
-		{proxyTypeKey: 'boolean'}
-		// TODO: work on bools here
-);
-
-var FunctionProxy = ProxyFactory(
-		function(func) {return func;},
-		{proxyTypeKey: 'function'}
-);
 
 /**
  * Return the wrapped object from a proxy.
@@ -275,14 +217,8 @@ var FunctionProxy = ProxyFactory(
  * @return The wrapped object or value. 
  */
 var getWrappedObject = function(pr) {
-	let isPrimitive = (['string', 'number', 'boolean'].indexOf(pr[proxyTypeKey]) !== -1);
-	if (isPrimitive === false) {
-		return pr[wrappedObjectKey];
-	}
-	// if proxy wraps an object that wraps a primitive value then return the value
-	return pr[wrappedObjectKey].valueOf();
+	return pr[wrappedObjectKey];
 };
-
 
 var variableDefToCode = require('misc').variableDefToCode;
 var functionDefToCode = require('misc').functionDefToCode;
@@ -294,14 +230,11 @@ var stringImports = [
 	"objectNameKey", 
 	"untaintedObjectNamesKey",
 	"wrappedObjectKey",
-	"proxyTypeKey",
 ];
 var funcImports = [
 	"ProxyStorage",
-	"getProxyConstructorForObject",
 	"buildProxy",
-	"HandlerFactory",
-	"ProxyFactory",
+	"buildHandler",
 	"getWrappedObject",
 	"getTaintedName",
 ];
@@ -315,28 +248,6 @@ for (let i of funcImports) {
 }
 
 importCode += "var storage = new ProxyStorage();";
-importCode += "" + 
-"var StringProxy = ProxyFactory(" +
-"function(string) {return new String(string);}," +
-"{proxyTypeKey: 'string'}" +
-");" +
-"var ObjectProxy = ProxyFactory(" +
-"function(object) {return object;}," +
-"{proxyTypeKey: 'object'}" +
-");" +
-"var NumberProxy = ProxyFactory(" +
-"function(number) {return new Number(number);}," +
-"{proxyTypeKey: 'number'}" +
-");" +
-"var BooleanProxy = ProxyFactory(" +
-"function(bool) {return new Boolean(bool);}," +
-"{proxyTypeKey: 'boolean'}" +
-");" +
-"var FunctionProxy = ProxyFactory(" +
-"function(func) {return func;}," +
-"{proxyTypeKey: 'function'}" +
-");"; 
-
 importCode += "" +
 "var isObjectTainted = ProxyStorage.prototype.isObjectTainted.bind(storage);" +
 "var clearTaintedObjects = ProxyStorage.prototype.clearTaintedObjects.bind(storage);" +

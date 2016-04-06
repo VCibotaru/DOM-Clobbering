@@ -8,6 +8,7 @@ var	logger = require('logger');
 var proxy = require('proxy');
 var replacer = require('replacer');
 var mocks = require('mocks');
+var rewritePrototypes = require('prototype-rewriter');
 /**
  * Tracks the creation of required element and links the Debugger with the Tainter.
  * @constructor
@@ -32,6 +33,8 @@ Tracker.prototype.initBrowserContext = function() {
 	this.win.eval(this.markFrameCode(replacer.importCode));
 	this.win.eval(this.markFrameCode(mocks.importCode));
 	this.win.eval(this.markFrameCode("this.mapMocksToObject(this);"));
+	this.win.eval(this.markFrameCode(rewritePrototypes.importCode));
+	this.win.eval(this.markFrameCode("this.rewritePrototypes(this);"));
 };
 
 /**
@@ -156,8 +159,8 @@ Tracker.prototype.startTaint = function() {
 	let name = config.elementName;
 	let code = "" +
 	"document." + name + " = " +
-	// "buildProxy(document." + name + ", 'base');" +
-	"buildProxy({'name':'querySelector'}, 'base');" +
+	"buildProxy(document.forms[1], 'base');" +
+	// "buildProxy({'name':'querySelector'}, 'base');" +
 	"";	
 	code = this.markFrameCode(code);	
 	let res = this.win.eval(code);

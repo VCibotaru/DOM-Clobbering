@@ -6,9 +6,9 @@
  * @module prototypE-rewriter
  */
 
-var names = require('replacer').replacerNames;
 require('mocks').mapMocksToObject(this);
-
+var replacerNames = require('replacer').replacerNames;
+var markAsMocked = require('mocks').markAsMocked;
 /**
  * Replaces the Array.prototype.indexOf method. 
  * This is needed to change the way in which the stored objects are compared.
@@ -21,15 +21,16 @@ require('mocks').mapMocksToObject(this);
  */
 var replaceArrayIndexOf = function(obj) {
 	// replace === with the te mock (te stands for triple equal)
-	let te = new Function("x", "y", "return " + names['==='] + "(x, y)");
-	obj.Array.prototype.indexOf = function(searchElement, fromIndex) {
+	let te = new Function("x", "y", "return " + replacerNames['==='] + "(x, y)");
+	markAsMocked(te);
+	let f = function(searchElement, fromIndex) {
 		var k;
-		if (te(this, null) === true) {
+		if (te(this, null)) {
 			throw new TypeError('"this" is null or not defined');
 		}
 		var o = Object(this);
 		var len = o.length >>> 0;
-		if (te(len, 0) === true) {
+		if (te(len, 0)) {
 			return -1;
 		}
 		var n = +fromIndex || 0;
@@ -41,13 +42,15 @@ var replaceArrayIndexOf = function(obj) {
 		}
 		k = Math.max(n >= 0 ? n : len - Math.abs(n), 0);
 		while (k < len) {
-			if (k in o && (te(o[k], searchElement) === true)) {
+			if (k in o && (te(o[k], searchElement))) {
 				return k;
 			}
 			k++;
 		}
 		return -1;
 	};
+	obj.Array.prototype.indexOf = f;
+	
 };
 
 
@@ -60,4 +63,18 @@ var rewritePrototypes = function(obj) {
 	}
 };
 
+var importCode = "";
+var functionDefToCode = require('misc').functionDefToCode;
+
+var importFuncs = [
+	"replaceArrayIndexOf",
+	"rewritePrototypes",
+];
+
+for (let f of importFuncs) {
+	importCode += functionDefToCode(this[f], f);
+}
+
+
 exports.rewritePrototypes = rewritePrototypes;
+exports.importCode = importCode;

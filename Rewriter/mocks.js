@@ -22,6 +22,14 @@ var getTaintedName = require('proxy').getTaintedName;
 // in the debugger's code
 var mockFunctionKey = '__is_mock_function__';
 
+var markAsMocked = function(f) {
+	f[mockFunctionKey] = true;
+};
+
+var isMarkedAsMocked = function(f) {
+	return (f[mockFunctionKey] === true);
+};
+
 /**
  * Builds mocks for unary operators.
  * @function UnaryOperatorMockFactory
@@ -32,7 +40,7 @@ var UnaryOperatorMockFactory = function(op) {
 	// build new function that incapsulates the operator
 	let opFunc = new Function('x', 'return ' + op + ' x;');
 	// mark as mocked
-	opFunc[mockFunctionKey] = true;
+	markAsMocked(opFunc);
 	let resultFunc = function(obj) {
 		if (isObjectTainted(obj) === true) {
 			obj = getWrappedObject(obj);
@@ -42,7 +50,7 @@ var UnaryOperatorMockFactory = function(op) {
 		return opFunc(obj);
 	};
 	// mark as mocked
-	resultFunc[mockFunctionKey] = true;
+	markAsMocked(resultFunc);
 	return resultFunc;
 };
 
@@ -56,7 +64,7 @@ var BinaryOperatorMockFactory = function(op) {
 	// build new function that incapsulates the operator
 	let opFunc = new Function('x', 'y', 'return x ' + op + ' y;');
 	// mark as mocked
-	opFunc[mockFunctionKey] = true;
+	markAsMocked(opFunc);
 	let resultFunc = function(left, right) {
 		let l = isObjectTainted(left);
 		let r = isObjectTainted(right);
@@ -82,7 +90,7 @@ var BinaryOperatorMockFactory = function(op) {
 		return opFunc(left, right);
 	};
 	// mark as mocked
-	resultFunc[mockFunctionKey] = true;
+	markAsMocked(resultFunc);
 	return resultFunc;
 };
 
@@ -119,6 +127,7 @@ var FunctionMockFactory = function(funcName) {
  */
 var EqualityOperatorMockFactory = function(op) {
 	let opFunc = new Function('x', 'y', 'return x ' + op + ' y;');
+	markAsMocked(opFunc);
 	let resultFunc = function(left, right) {
 		let l = isObjectTainted(left);
 		let r = isObjectTainted(right);
@@ -174,6 +183,8 @@ var importCode = "";
 
 importCode += variableDefToCode(mockFunctionKey, "mockFunctionKey");
 var funcImports = [
+	"markAsMocked",
+	"isMarkedAsMocked",
 	"UnaryOperatorMockFactory",
 	"BinaryOperatorMockFactory",
 	"EqualityOperatorMockFactory",
@@ -185,8 +196,8 @@ for (let i of funcImports) {
 	importCode += functionDefToCode(this[i], i);
 }
 
-// importCode += "mapMocksToObject(this);";
-
 exports.importCode = importCode;
 exports.mapMocksToObject = mapMocksToObject;
+exports.markAsMocked = markAsMocked;
+exports.isMarkedAsMocked = isMarkedAsMocked;
 exports.mockFunctionKey = mockFunctionKey;
