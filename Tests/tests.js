@@ -29,7 +29,7 @@ TestCase.prototype.runTest = function() {
 	// run the code and save the achieved result
 	var curResult;
 	try {
-		curResult = this.code(); 
+		curResult = this.code().valueOf();
 	}
 	catch(e) {
 		console.log('Got Exception: ' + e);
