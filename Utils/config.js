@@ -2,7 +2,7 @@
 
 
 var parseArgs = require('minimist');
-
+var fs = require('fs');
 /**
  * Represents a configuration of the current launch.
  * @constructor
@@ -12,11 +12,14 @@ var parseArgs = require('minimist');
 */
 var Config = function() {
 	this.args = parseArgs(require('system').args.slice(1));
-	this.url = this.args.url;
-	this.DEBUG = true;
-	this.elementName = this.args.taint_name;
-	this.testMode = this.args.test;
-	this.xpath = '//form[2]';
+	let conf = this.args;
+	if (this.args.config_file !== undefined) {
+		let f = fs.read(this.args.config_file);
+		conf = JSON.parse(f);
+	}
+	this.url = conf.url;
+	this.elementName = conf.taint_name;
+	this.testMode = conf.test;
 };
 
 

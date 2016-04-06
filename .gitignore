@@ -7,3 +7,5 @@ Common_names/*
 Utils/node_modules/*
 docs-conf.json
 work.py
+
+*.json
