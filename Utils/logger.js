@@ -7,7 +7,7 @@ var colors = require('colors');
 var logger = {
 	debugLog : function(msg) {
 				   if (DEBUG) {
-					   console.log(msg);
+					   console.log(colors.green(msg) + '');
 				   }
 			   },
 	log : function(msg) {

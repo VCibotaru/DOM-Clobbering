@@ -9,14 +9,17 @@ var	test = require('test-runner');
 var tracker;
 
 webpage.onConsoleMessage = function(message, line, file) {
-	logger.debugLog('message from browser: ' + message);
+	red = require('colors').red;
+	logger.log(red('message from browser: ' + message));
 };
+
 if (config.testMode === true) {
 	test.doTest();
 	slimer.exit();
 }
 else {
 	dispatcher.onWindowCreated(function(win) {
+		console.log('new window detected: ' + win.location);
 		tracker = new Tracker(win);
 	});
 	webpage.open(config.url, function() {

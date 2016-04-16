@@ -101,7 +101,11 @@ Tracker.prototype.shouldRewriteFrame = function(frame) {
  * @return - a boolean value.
  */
 Tracker.prototype.isElementCreated = function() {
-	return (this.win.document.forms[1] !== undefined);
+	if (config.xpath) {
+		return (this.win.document.evaluate(config.xpath, this.win.document, null,
+				   XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue !== undefined);
+	}
+	return true;
 };
 
 /**
@@ -111,7 +115,11 @@ Tracker.prototype.isElementCreated = function() {
  * @this Tracker
  * @return - a boolean value
  */ 
+
 Tracker.prototype.shouldStartTaint = function() {
+	if (config.taintAtStart) {
+		return (this.taintStarted === false);
+	} 
 	return (this.taintStarted === false && this.isElementCreated() === true);
 };
 
@@ -123,6 +131,9 @@ Tracker.prototype.shouldStartTaint = function() {
  * @return - a boolean value
  */
 Tracker.prototype.shouldTaint = function() {
+	if (config.taintAtStart === true) {
+		return true;
+	}
 	this.elementCreated = this.elementCreated || (this.isElementCreated() === true);
 	return this.elementCreated;
 };
@@ -154,20 +165,30 @@ Tracker.prototype.isFrameCodeMarked = function(code) {
  * @method
  * @this Tracker
  */
+
 Tracker.prototype.startTaint = function() {
 	this.taintStarted = true;
 	let name = config.elementName;
-	let xpath = config.xpath;
-	let code = "" +
-	"var element = document.evaluate('" + 
-	xpath +
-	"' , document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;" +
-	"document." + name + " = " +
-	"buildProxy(element, 'base');" +
-	"";	
+	let code;
+	if (config.taintStartCode) {
+		code = config.taintStartCode;
+	} else {
+		let xpath = config.xpath;
+		code = "" +
+			"var element = document.evaluate('" + 
+			xpath +
+			"' , document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;" +
+			"document." + name + " = " +
+			"buildProxy(element, 'base');" +
+			"";	
+	}
+	logger.debugLog('Code executed at start of taint:');
+	logger.debugLog(code);
+	
 	code = this.markFrameCode(code);	
 	this.win.eval(code);
 };
+
 
 /** The Tracker class*/
 exports.Tracker = Tracker;

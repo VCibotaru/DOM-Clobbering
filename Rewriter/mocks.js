@@ -106,14 +106,16 @@ var FunctionMockFactory = function(funcName) {
 	// if in future there will be other (non-unary) functions
 	// I shall think on how to implement this factory in a better way
 	let func = new Function('x', 'return ' + funcName + '(x)');
+	markAsMocked(func);
 	let resultFunc = function(obj) {
 		if (isObjectTainted(obj) === true) {
-			obj = getWrappedObject(obj);
 			let name = funcName + '(' + getTaintedName(obj) + ')';
+			obj = getWrappedObject(obj);
 			return buildProxy(func(obj), name);
 		}
 		return func(obj);
 	};
+	markAsMocked(resultFunc);
 	return resultFunc;
 };
 	

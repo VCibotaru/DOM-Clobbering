@@ -115,9 +115,9 @@ var buildProxy = function(object, name) {
 	objectWrapper[untaintedObjectNamesKey] = new Set();
 	objectWrapper[wrappedObjectKey] = object;
 
-	//TODO: add some more custom fields initialization
 	let proxy = new Proxy(objectWrapper, handler);
 	storage.addTaintedObject(proxy);
+	console.log('new proxy built: ' + name);
 	return proxy; 
 };
 
@@ -194,9 +194,7 @@ var buildHandler = function() {
 			// HERE we always taint the result.
 			// However, there is another option: to not do this and let the 
 			// code itself taint the result or not.
-			// TODO:
-			// let objName = `${target[objectNameKey]}.apply(${thisArg},${argsList})`;
-			let objName = `${target[objectNameKey]}.apply()`;
+			let objName = `${target[objectNameKey]}.apply(${argsList})`;
 			let proxy = buildProxy(result, objName);
 			return proxy;
 		},

@@ -30,8 +30,8 @@ var unaryOperatorNames = {
 	'typeof': '__typeof__',
 	// '+'     : '__unary_plus__',
 	// '-'     : '__unary_minus__',
-	'++'    : '__increment__',
-	'--'    : '__decrement__',
+	// '++'    : '__increment__',
+	// '--'    : '__decrement__',
 };
 
 var binaryOperatorNames = {

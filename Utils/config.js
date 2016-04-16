@@ -17,10 +17,20 @@ var Config = function() {
 		let f = fs.read(this.args.config_file);
 		conf = JSON.parse(f);
 	}
+	// xpath expression for the needed HTML element
 	this.xpath = conf.xpath;
+	// url of the page
 	this.url = conf.url;
+	// the name that shall be assigned to the HTML element
 	this.elementName = conf.taint_name;
+	// true for unit tests mode, false/undefined for normal mode
 	this.testMode = conf.test;
+	// code to be ran at start of the taint process
+	this.taintStartCode = conf.taint_start_code;
+	// if true then taint begins immediately after window creation
+	// else the script waits for needed HTML element creation
+	this.taintAtStart = conf.taint_at_start;
+	this.DEBUG = true;
 };
 
 
