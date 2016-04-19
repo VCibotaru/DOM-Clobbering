@@ -7,9 +7,12 @@ var esprima = require('esprima');
 var escodegen = require('escodegen');
 var estraverse = require('estraverse');
 var replacers = require('replacer').replacers;
-var mocks = require('mocks');
 
 var enter = function(node, parent) {
+	if (parent.type === 'AssignmentExpression' && node === parent.left) {
+		// never rewrite the left parts of an assignment
+		return estraverse.VisitorOption.Skip;
+	}
 	for (let replacer of replacers) {
 		if (replacer.predicate(node) === true) {
 			node = replacer.replace(node);

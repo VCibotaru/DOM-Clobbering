@@ -22,6 +22,13 @@ var Syntax = {
 	BinaryExpression: 'BinaryExpression',
 	LogicalExpression: 'LogicalExpression',
 	UpdateExpression: 'UpdateExpression',
+	MemberExpression: 'MemberExpression',
+	Literal: 'Literal',
+};
+
+var memberOperatorNames = {
+	'.'     : '__dot__',
+	'[]'    : '__dot__',
 };
 
 var unaryOperatorNames = {
@@ -94,6 +101,7 @@ copyObject(functionNames, replacerNames);
 copyObject(unaryOperatorNames, replacerNames);
 copyObject(binaryOperatorNames, replacerNames);
 copyObject(equalityOperatorNames, replacerNames);
+copyObject(memberOperatorNames, replacerNames);
 
 
 /**
@@ -125,6 +133,7 @@ var isBinaryOperator = function(op) {
 var isEqualityOperator = function(op) {
 	return (op in equalityOperatorNames); 
 };
+
 /**
  * Checks if the object is a function.
  * @function isFunction
@@ -133,6 +142,16 @@ var isEqualityOperator = function(op) {
  */
 var isFunction = function(func) {
 	return (func in functionNames); 
+};
+
+/**
+ * Checks if the operator if a member operator.
+ * @function isMemberOperator
+ * @param {String} func - The string representation of the operator (e.g. '.')
+ * @return - True if operator is a member operator, else false
+ */
+var isMemberOperator = function(op) {
+	return (op in memberOperatorNames); 
 };
 
 /**
@@ -227,22 +246,62 @@ var FunctionReplacerFactory = function(func, funcReplacerName) {
 	return replacer;
 };	
 
+var MemberOperatorReplacerFactory = function(op, opReplacerName) {
+	let replacer = new Replacer(
+			function(node) {
+				return node.type === Syntax.MemberExpression;
+			},
+			function(node) {
+				node.type = Syntax.CallExpression;
+				node.callee = {
+					'type': Syntax.Identifier,
+					'name': opReplacerName,
+				};
+				let newProperty = node.property;
+				// expr | node.computed | node.property === Literal | node.property === Identifier
+				// -------------------------------------------------------------------------------
+				//x.a   |    false      |            false          |           true
+				//x[a]  |    true       |            false          |           true
+				//x['a']|    true       |            true           |          false
+				// -------------------------------------------------------------------------------
+				// x.a -> x['a']
+				// x[a] -> x[a]
+				// x['a'] -> x['a']
+				if (node.computed === false) {
+					newProperty = {
+						'type': Syntax.Literal,
+						'value': node.property.name,
+						'raw': node.property.name,
+					};
+				}
+				node.arguments = [
+					node.object,
+					newProperty,	
+				];
+				return node;
+			});
+	return replacer;
+};
+
 
 // returns all the replacers described in replacerNames
 var createAllReplacers = function() {
 	let replacers = [];
 	let nameTypes = {
-		'unary'    : unaryOperatorNames,
-		'binary'   : binaryOperatorNames,
-		'equality' : equalityOperatorNames,
-		'function' : functionNames,
+		// 'unary'    : unaryOperatorNames,
+		// 'binary'   : binaryOperatorNames,
+		// 'equality' : equalityOperatorNames,
+		// 'function' : functionNames,
+		'member': memberOperatorNames,
 	};
 	let factories = {
-		'unary'    : UnaryOperatorReplacerFactory,
-		'binary'   : BinaryOperatorReplacerFactory,
-		// equality operators is created using the same factory as the binary ones
-		'equality' : BinaryOperatorReplacerFactory,
-		'function' : FunctionReplacerFactory,
+		// 'unary'    : UnaryOperatorReplacerFactory,
+		// 'binary'   : BinaryOperatorReplacerFactory,
+		// // equality operators is created using the same factory as the binary ones
+		// 'equality' : BinaryOperatorReplacerFactory,
+		// 'function' : FunctionReplacerFactory,
+		'member': MemberOperatorReplacerFactory,
+		
 	};
 	for (let type in nameTypes) {
 		// for all types of names (function names, operator names, ...)
@@ -264,6 +323,7 @@ var createAllReplacers = function() {
 var importCode = "";
 var arrayImports = [
 	"Syntax",
+	"memberOperatorNames",
 	"unaryOperatorNames",
 	"binaryOperatorNames",
 	"equalityOperatorNames",
@@ -275,10 +335,12 @@ var funcImports = [
 	"isBinaryOperator",
 	"isFunction",
 	"isEqualityOperator",
+	"isMemberOperator",
 	"Replacer",
 	"UnaryOperatorReplacerFactory",
 	"BinaryOperatorReplacerFactory",
 	"FunctionReplacerFactory",
+	"MemberOperatorReplacerFactory",
 	"createAllReplacers",
 ];
 
@@ -300,4 +362,5 @@ exports.isUnaryOperator = isUnaryOperator;
 exports.isBinaryOperator = isBinaryOperator;
 exports.isFunction = isFunction;
 exports.isEqualityOperator = isEqualityOperator;
+exports.isMemberOperator = isMemberOperator;
 exports.importCode = importCode;
