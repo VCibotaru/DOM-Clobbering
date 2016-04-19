@@ -288,17 +288,17 @@ var MemberOperatorReplacerFactory = function(op, opReplacerName) {
 var createAllReplacers = function() {
 	let replacers = [];
 	let nameTypes = {
-		// 'unary'    : unaryOperatorNames,
-		// 'binary'   : binaryOperatorNames,
-		// 'equality' : equalityOperatorNames,
+		'unary'    : unaryOperatorNames,
+		'binary'   : binaryOperatorNames,
+		'equality' : equalityOperatorNames,
 		// 'function' : functionNames,
 		'member': memberOperatorNames,
 	};
 	let factories = {
-		// 'unary'    : UnaryOperatorReplacerFactory,
-		// 'binary'   : BinaryOperatorReplacerFactory,
+		'unary'    : UnaryOperatorReplacerFactory,
+		'binary'   : BinaryOperatorReplacerFactory,
 		// // equality operators is created using the same factory as the binary ones
-		// 'equality' : BinaryOperatorReplacerFactory,
+		'equality' : BinaryOperatorReplacerFactory,
 		// 'function' : FunctionReplacerFactory,
 		'member': MemberOperatorReplacerFactory,
 		

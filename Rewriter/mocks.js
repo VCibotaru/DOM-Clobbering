@@ -8,15 +8,21 @@
  * @module mocks
  */
 
-var getWrappedObject = require('proxy').getWrappedObject;
-var buildProxy = require('proxy').buildProxy;
-var isObjectTainted = require('proxy').isObjectTainted;
+// var buildProxy = require('proxy').buildProxy;
+// var isObjectTainted = require('proxy').isObjectTainted;
+// var getTaintedName = require('proxy').getTaintedName;
+
+var getTaintedName = require('tainter').getTaintedName;
+var isObjectTainted = require('tainter').isObjectTainted;
+var getWrappedObject = require('tainter').getWrappedObject;
+var taint = require('tainter').taint;
+
 var replacerNames = require('replacer').replacerNames;
 var isUnaryOperator = require('replacer').isUnaryOperator;
 var isBinaryOperator = require('replacer').isBinaryOperator;
 var isFunction = require('replacer').isFunction;
 var isEqualityOperator = require('replacer').isEqualityOperator;
-var getTaintedName = require('proxy').getTaintedName;
+var isMemberOperator = require('replacer').isMemberOperator;
 
 // this is needed to distinguish mocked functions from the others
 // in the debugger's code
@@ -45,7 +51,7 @@ var UnaryOperatorMockFactory = function(op) {
 		if (isObjectTainted(obj) === true) {
 			obj = getWrappedObject(obj);
 			let name = op + '(' + getTaintedName(obj) + ')';
-			return buildProxy(opFunc(obj), name);
+			return taint(opFunc(obj), name);
 		}
 		return opFunc(obj);
 	};
@@ -85,7 +91,7 @@ var BinaryOperatorMockFactory = function(op) {
 		}
 		if (l === true || r === true) {
 			let name = op + '(' + leftName + ',' + rightName + ')';
-			return buildProxy(opFunc(left,right), name);
+			return taint(opFunc(left,right), name);
 		}
 		return opFunc(left, right);
 	};
@@ -144,6 +150,22 @@ var EqualityOperatorMockFactory = function(op) {
 	};
 	return resultFunc;
 };
+
+var MemberOperatorMockFactory = function(op) {
+	let resultFunc = function(object, property) {
+		let val = object[property];
+		if (isObjectTainted(object)) {
+			if (val !== undefined && val!== null) {
+				let newName = `${getTaintedName(object)}.${property}`;
+				val = taint(val, newName); 
+			}
+		}
+		return val;
+	};
+	markAsMocked(resultFunc);
+	return resultFunc;
+};
+
 /**
  * Builds the mocks and maps them to the given object's namespace.
  * @function
@@ -155,12 +177,14 @@ var mapMocksToObject = function(obj) {
 		'binary'   : isBinaryOperator,
 		'equality' : isEqualityOperator,
 		'function' : isFunction,
+		'member'   : isMemberOperator,
 	};
 	let factories = {
 		'unary'    : UnaryOperatorMockFactory,
 		'binary'   : BinaryOperatorMockFactory,
 		'equality' : EqualityOperatorMockFactory,
 		'function' : FunctionMockFactory,
+		'member'   : MemberOperatorMockFactory,
 	};
 	for (let name in replacerNames) {
 		let factory;
