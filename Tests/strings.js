@@ -1,115 +1,106 @@
 var TestCase = require('./tests').TestCase;
 var rewrite = require('rewriter').rewrite;
-var proxy = require('proxy');
 
-var cleanup = proxy.clearTaintedObjects;
+var cleanup = this.clearTaintedObjects;
 
 require('mocks').mapMocksToObject(this);
 
 var creationTest = new TestCase(
 		'StringProxy creation',
 		function() {
-			let pr = proxy.buildProxy('foo', 'base');
+			let pr = this.taint('foo', 'base');
 			let y = pr;
-			return proxy.isObjectTainted(y);
+			return this.isObjectTainted(y);
 		},
-		true,
-		cleanup
+		true
 );
 
 var typeofTest = new TestCase(
 		'Strings typeof',
 		function() {
 			let code = "" +
-			"let pr = proxy.buildProxy('foo');" + 
+			"let pr = this.taint('foo');" + 
 			"typeof pr;" +
 			"";
 			let newCode = rewrite(code);
 			return eval(newCode);
 		},
-		'string',
-		cleanup
+		'string'
 );
 
 var doubleEqualTest = new TestCase(
 		'Strings double equal (==)',
 		function() {
 			let code = "" +
-			"let pr = proxy.buildProxy('foo');" +
+			"let pr = this.taint('foo');" +
 			"pr == 'foo';" +
 			"";
 			let newCode = rewrite(code);
 			return eval(newCode);
 		},
-		true,
-		cleanup
+		true
 );
 var tripleEqualTest = new TestCase(
 		'Strings triple equal (===)',
 		function() {
 			let code = "" +
-			"let pr = proxy.buildProxy('foo');" +
+			"let pr = this.taint('foo');" +
 			"pr === 'foo';" +
 			"";
 			let newCode = rewrite(code);
 			return eval(newCode);
 		},
-		true,
-		cleanup
+		true
 );
 
 var plusTest = new TestCase(
 		'Strings concat (+)',
 		function() {
 			let code = "" +
-			"let x = proxy.buildProxy('foo');" + 
-			"let y = proxy.buildProxy('bar');" +
+			"let x = this.taint('foo');" + 
+			"let y = this.taint('bar');" +
 			"let z = x + 'bar';" +
 			"(x + y === 'foo' + 'bar') && (x + 'bar' === 'foo' + y) &&" +
 			"(x + new String('bar')  === new String('foo') + y) &&" +
-			"(x + 4 === 'foo4') && (proxy.isObjectTainted(z));" + 
+			"(x + 4 === 'foo4') && (this.isObjectTainted(z));" + 
 			"";
 			let newCode = rewrite(code);
 			return eval(newCode);
 		},
-		true,
-		cleanup
+		true
 );
 
 var evalTest = new TestCase(
 		'Strings eval()',
 		function() {
 			let code = "" +
-			"let x = proxy.buildProxy('2+2');" +
+			"let x = this.taint('2+2');" +
 			"eval(x);" +
 			"";
 			let newCode = rewrite(code);
 			return eval(newCode);
 		},
-		4,
-		cleanup
+		4
 );
 
 var sliceTest = new TestCase(
 		'Strings slice()',
 		function() {
-			let pr = proxy.buildProxy('foobar');
+			let pr = this.taint('foobar');
 			let x = pr.slice(0, 3);
-			return __triple_equal__(x, 'foo') && proxy.isObjectTainted(x);
+			return __triple_equal__(x, 'foo') && this.isObjectTainted(x);
 		},
-		true,
-		cleanup
+		true
 );
 
 var splitTest = new TestCase(
 		'Strings split()',
 		function() {
-			let pr = proxy.buildProxy('Foo. Bar.');
+			let pr = this.taint('Foo. Bar.');
 			let x = pr.split('.');
-			return proxy.isObjectTainted(x);
+			return this.isObjectTainted(x);
 		},
-		true,
-		cleanup
+		true
 );
 
 exports.tests = [creationTest, typeofTest, doubleEqualTest, tripleEqualTest, plusTest, evalTest, sliceTest, splitTest];

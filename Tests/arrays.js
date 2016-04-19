@@ -1,54 +1,45 @@
 var TestCase = require('./tests').TestCase;
-var proxy = require('proxy');
-
-var cleanup = proxy.clearTaintedObjects;
 
 require('mocks').mapMocksToObject(this);
-require('prototype-rewriter').rewritePrototypes(this);
+// require('prototype-rewriter').rewritePrototypes(this);
 
 var creationTest = new TestCase(
 		'Array Proxy creation',
 		function() {
-			let pr = proxy.buildProxy(['foo', 'bar']);
+			let pr = this.taint(['foo', 'bar']);
 			let x = pr;
-			return proxy.isObjectTainted(x);
+			return this.isObjectTainted(x);
 		},
-		true,
-		cleanup
+		true
 );
 
 var accessTest = new TestCase(
 		'Array element access',
 		function() {
-			let pr = proxy.buildProxy(['foo', 'bar']);
+			let pr = this.taint(['foo', 'bar']);
 			let x = pr[0];
-			return proxy.isObjectTainted(x);
+			return this.isObjectTainted(x);
 		},
-		true, 
-		cleanup
+		true
 );
 
-// We are in trouble here!!!
-// The best solution is probably to replace the Array.prototype.indexOf
 var indexOfTest = new TestCase(
 		'Array indexOf function',
 		function() {
-			let pr = proxy.buildProxy(['foo', 'bar']);
+			let pr = this.taint(['foo', 'bar']);
 			return pr.indexOf('foo');
 		},
-		0,
-		cleanup
+		0
 );
 
 var joinTest = new TestCase(
 		'Array join function',
 		function() {
-			let pr = proxy.buildProxy(['foo', 'bar']);
+			let pr = this.taint(['foo', 'bar']);
 			let x = pr.join(',');	
-			return proxy.isObjectTainted(x) && __triple_equal__(x, 'foo,bar');
+			return this.isObjectTainted(x) && __triple_equal__(x, 'foo,bar');
 		},
-		true, 
-		cleanup
+		true
 );
 
 exports.tests = [creationTest, accessTest, indexOfTest, joinTest];

@@ -1,20 +1,18 @@
 var TestCase = require('./tests').TestCase;
 var rewrite = require('rewriter').rewrite;
-var proxy = require('proxy');
 
-var cleanup = proxy.clearTaintedObjects;
 
 require('mocks').mapMocksToObject(this);
 var typeofTest = new TestCase(
 		'Typeof rewriting',
 		function() {
+			var objProxy  = this.taint({});
+			var strProxy  = this.taint('a');
+   			var numProxy  = this.taint(1);
+			var boolProxy = this.taint(true);
+			var funcProxy = this.taint(function(){});
 			var code = "" +
 			"(function() {" +
-			"var objProxy  = proxy.buildProxy({});" +
-			"var strProxy  = proxy.buildProxy('a');" +
-   			"var numProxy  = proxy.buildProxy(1);" +
-			"var boolProxy = proxy.buildProxy(true);" +
-			"var funcProxy = proxy.buildProxy(function(){});" + 
 			"var o = typeof objProxy;" +
 			"var s = typeof strProxy;" +
 			"var n = typeof numProxy;" +
@@ -31,20 +29,19 @@ var typeofTest = new TestCase(
 			return eval(newCode); 
 		},
 		['object', 'string', 'number', 'boolean', 'function',
-		 'object', 'string', 'number', 'boolean', 'function'],
-		cleanup
+		 'object', 'string', 'number', 'boolean', 'function']
 );	
 
 var tripleEqualTest = new TestCase(
 		'Triple equal rewriting',
 		function() {
+			var objProxy  = this.taint({});
+			var strProxy  = this.taint('a');
+   			var numProxy  = this.taint(1);
+			var boolProxy = this.taint(true);
+			var funcProxy = this.taint(function(){});
 			var code = "" +
 			"(function() {" +
-			"var objProxy  = proxy.buildProxy({});" +
-			"var strProxy  = proxy.buildProxy('a');" +
-   			"var numProxy  = proxy.buildProxy(1);" +
-			"var boolProxy = proxy.buildProxy(true);" +
-			"var funcProxy = proxy.buildProxy(function(){});" + 
 			"var O = {};" +
 			"var S = 'a';" + 
 			"var N = 1;" +
@@ -64,8 +61,7 @@ var tripleEqualTest = new TestCase(
 			var newCode = rewrite(code);
 			return eval(newCode); 
 		},
-		[false, true, true, true, false, false, true, true, true],
-		cleanup
+		[false, true, true, true, false, false, true, true, true]
 );
 
 exports.tests = [typeofTest, tripleEqualTest];

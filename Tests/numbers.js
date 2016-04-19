@@ -1,19 +1,16 @@
 var TestCase = require('./tests').TestCase;
-var proxy = require('proxy');
 var rewrite = require('rewriter').rewrite;
 var replacerNames = require('replacer').replacerNames;
-var cleanup = proxy.clearTaintedObjects;
 
 require('mocks').mapMocksToObject(this);
 
 var creationTest = new TestCase(
 		'Number Proxy creation',
 		function() {
-			let x = proxy.buildProxy(1, 'x');
-			return proxy.isObjectTainted(x);
+			let x = this.taint(1, 'x');
+			return this.isObjectTainted(x);
 		},
-		true,
-		cleanup
+		true
 );
 
 // some very dirty hacks!!!
@@ -27,12 +24,12 @@ var lambdaToFunc = function(lambda) {
 var UnaryOperationTestFunctionFactory = function(op, init, res) {
 	let func = function() {
 		let newOp = lambdaToFunc(rewrite(op.toString()));
-		let x = proxy.buildProxy(init, 'x');
+		let x = this.taint(init, 'x');
 		let y = newOp(x);
 		require('mocks').mapMocksToObject(this);
 		let te = this[replacerNames['===']]; // triple equal mock
 		let de = this[replacerNames['==']]; // double equal mock
-		res = [proxy.isObjectTainted(y), te(res, y), te(res, y)];
+		res = [this.isObjectTainted(y), te(res, y), te(res, y)];
 		res = res.map((a) => a.valueOf());
 		return res.reduce((a,b) => a && b, true);
 	};
@@ -42,8 +39,8 @@ var UnaryOperationTestFunctionFactory = function(op, init, res) {
 var BinaryOperationTestFunctionFactory = function(op, initX, initY, XY, YX) {
 	let func = function() {
 			let newOp = lambdaToFunc(rewrite(op.toString()));
-			let x = proxy.buildProxy(initX, 'x');
-			let y = proxy.buildProxy(initY, 'y');
+			let x = this.taint(initX, 'x');
+			let y = this.taint(initY, 'y');
 			let z = initY;
 			let xy = newOp(x, y); 
 			let yx = newOp(y, x); 
@@ -61,10 +58,10 @@ var BinaryOperationTestFunctionFactory = function(op, initX, initY, XY, YX) {
 			let de = this[replacerNames['==']]; // double equal mock
 			// all of following must be true
 			let res = [
-				proxy.isObjectTainted(xy), 
-				proxy.isObjectTainted(yx),
-				proxy.isObjectTainted(xz),
-				proxy.isObjectTainted(zx),
+				this.isObjectTainted(xy), 
+				this.isObjectTainted(yx),
+				this.isObjectTainted(xz),
+				this.isObjectTainted(zx),
 				de(xy, XY),
 			   	te(xy, XY), 
 				de(yx, YX),
@@ -84,8 +81,8 @@ var BinaryOperationTestFunctionFactory = function(op, initX, initY, XY, YX) {
 var EqualityOperationTestFunctionFactory = function(op, initX, initY, XY, YX) {
 	let func = function() {
 			let newOp = lambdaToFunc(rewrite(op.toString()));
-			let x = proxy.buildProxy(initX, 'x');
-			let y = proxy.buildProxy(initY, 'y');
+			let x = this.taint(initX, 'x');
+			let y = this.taint(initY, 'y');
 			let z = initY;
 			let xy = newOp(x, y); 
 			let yx = newOp(y, x); 
@@ -111,7 +108,7 @@ var EqualityOperationTestFunctionFactory = function(op, initX, initY, XY, YX) {
 };
 
 var OperationTestCaseFactory = function(description, testFunc) {
-	return new TestCase(description, testFunc, true, cleanup);
+	return new TestCase(description, testFunc, true);
 };
 
 
@@ -265,26 +262,24 @@ var greaterOrEqualThan = OperationTestCaseFactory(
 var valueOfTest = new TestCase(
 		'Numbers valueOf()',
 		function() {
-			let x = proxy.buildProxy(1);
+			let x = this.taint(1);
 			let y = x.valueOf();
 			return y;
 		},
-		1,
-		cleanup
+		1
 );
 
 var evalTest = new TestCase(
 		'Numbers eval()',
 		function() {
 			let code = "" +
-			"let x = proxy.buildProxy(4);" +
+			"let x = this.taint(4);" +
 			"eval(x);" +
 			"";
 			let newCode = rewrite(code);
 			return eval(newCode);
 		},
-		4,
-		cleanup
+		4
 );
 exports.tests = [
 	creationTest,

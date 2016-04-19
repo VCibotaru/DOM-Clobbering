@@ -1,36 +1,35 @@
 var TestCase = require('./tests').TestCase;
-var proxy = require('proxy');
 
 var booleanLiteralTest = new TestCase(
 		'Boolean Literal Test',
 		function() {
-			var pr = proxy.buildProxy(true, 'base');
-			return proxy.isObjectTainted(pr);
+			var pr = this.taint(true, 'base');
+			return this.isObjectTainted(pr);
 		},
 		true,	
-		proxy.clearTaintedObjects
+		this.clearTaintedObjects
 );
 
 
 var numberLiteralTest = new TestCase(
 		'Number Literal Test',
 		function() {
-			var pr = proxy.buildProxy(1, 'base');
-			return proxy.isObjectTainted(pr);
+			var pr = this.taint(1, 'base');
+			return this.isObjectTainted(pr);
 		},
 		true,	
-		proxy.clearTaintedObjects
+		this.clearTaintedObjects
 );
 
 
 var stringLiteralTest = new TestCase(
 		'String Literal Test',
 		function() {
-			var pr = proxy.buildProxy('asd', 'base');
-			return proxy.isObjectTainted(pr);
+			var pr = this.taint('asd', 'base');
+			return this.isObjectTainted(pr);
 		},
 		true,	
-		proxy.clearTaintedObjects
+		this.clearTaintedObjects
 );
 
 

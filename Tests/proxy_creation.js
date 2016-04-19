@@ -1,39 +1,38 @@
 var TestCase = require('./tests').TestCase;
-var proxy = require('proxy');
 
 var proxyCreationTest = new TestCase(
 		'Proxy Creation',
 		function() {
 			var obj = {'foo': 'bar'};
-			var pr = proxy.buildProxy(obj, 'base');
-			return proxy.getTaintedNames();
+			var pr = this.taint(obj, 'base');
+			return this.getTaintedNames();
 		},
 		["base"],
-		proxy.clearTaintedObjects
+		this.clearTaintedObjects
 );
 
 var proxyPropagationTest = new TestCase(
 		'Proxy Propagation',
 		function () {
 			var obj = {'foo': 'bar'};
-			var pr = proxy.buildProxy(obj, 'base');
+			var pr = this.taint(obj, 'base');
 			var x = pr;
-			return proxy.isObjectTainted(x);
+			return this.isObjectTainted(x);
 		},
 		true,
-		proxy.clearTaintedObjects
+		this.clearTaintedObjects
 );
 
 var proxyReassignmentTest = new TestCase(
 		'Proxy Reassignment',
 		function () {
 			var obj = {'foo': 'bar'};
-			var pr = proxy.buildProxy(obj, 'base');
+			var pr = this.taint(obj, 'base');
 			pr = 'asd';
-			return proxy.isObjectTainted(pr);
+			return this.isObjectTainted(pr);
 		},
 		false,
-		proxy.clearTaintedObjects
+		this.clearTaintedObjects
 );
 
 exports.tests = [proxyCreationTest, proxyPropagationTest, proxyReassignmentTest];

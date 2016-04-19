@@ -3,6 +3,9 @@
  */
 
 var _ = require('underscore');
+
+// var workModule = require('proxy');
+var workModule = require('tainter');
 /**
  * Represents a test case.
  * @constructor
@@ -17,7 +20,18 @@ var TestCase = function(description, code, result, cleanup) {
 	this.description = description;
 	this.code = code;
 	this.result = result;
-	this.cleanup = cleanup;
+
+	// import all functions from the work module
+	this.taint = workModule.taint;
+	this.isObjectTainted = workModule.isObjectTainted;
+	this.isWrapper = workModule.isWrapper;
+	this.getTaintedName = workModule.getTaintedName;
+	this.getWrappedObject = workModule.getWrappedObject;
+	this.clearTaintedObjects = workModule.clearTaintedObjects;
+	this.getTaintedNames = workModule.getTaintedNames;
+
+	this.cleanup = this.clearTaintedObjects;
+
 };
 
 /**
@@ -29,7 +43,7 @@ TestCase.prototype.runTest = function() {
 	// run the code and save the achieved result
 	var curResult;
 	try {
-		curResult = this.code().valueOf();
+		curResult = this.code();
 	}
 	catch(e) {
 		console.log('Got Exception: ' + e);
