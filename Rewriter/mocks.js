@@ -183,6 +183,7 @@ var buildMemberFunctionMock = function() {
 		let args = Array.from(arguments).slice(2);
 		let res = obj[name].apply(obj, args);
 		if (isObjectTainted(obj)) {
+			// conservative strategy - always taint the result
 			res = taint(res);
 		}
 		return res;

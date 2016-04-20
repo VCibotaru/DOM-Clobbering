@@ -72,24 +72,6 @@ var taint = function(obj, name) {
 		obj = new types[typeof obj](obj);
 		obj[isWrapperKey] = true;
 		obj[wrappedObjectKey] = oldObj;
-	} else if (typeof obj === 'function') {
-		// let decorator = function() {
-		// 	let res = oldObj.apply(this, arguments);
-		// 	console.log(this);
-		// 	return taint(res, getTaintedName(oldObj) + `(${arguments})`);
-		// };
-		let decorator = new Proxy(oldObj, {
-			apply: function(target, thisArg, argsList) {
-				console.log(thisArg);
-				let wrappedFunc = getWrappedObject(target);
-				let res = wrappedFunc.apply(thisArg, argsList);
-				let newName = `${getTaintedName(target)}(${argsList})`;
-				return taint(res, newName);
-			}
-		});
-		decorator[isWrapperKey] = true;
-		decorator[wrappedObjectKey] = oldObj;
-		obj = decorator;
 	}
 	obj[isObjectTaintedKey] = true;
 	obj[taintedNameKey] = name;
