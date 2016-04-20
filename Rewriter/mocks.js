@@ -18,6 +18,7 @@ var getWrappedObject = require('tainter').getWrappedObject;
 var taint = require('tainter').taint;
 
 var replacerNames = require('replacer').replacerNames;
+var memberFunctionCallName = require('replacer').memberFunctionCallName;
 var isUnaryOperator = require('replacer').isUnaryOperator;
 var isBinaryOperator = require('replacer').isBinaryOperator;
 var isFunction = require('replacer').isFunction;
@@ -49,9 +50,9 @@ var UnaryOperatorMockFactory = function(op) {
 	markAsMocked(opFunc);
 	let resultFunc = function(obj) {
 		if (isObjectTainted(obj) === true) {
-			obj = getWrappedObject(obj);
+			wrappedObj = getWrappedObject(obj);
 			let name = op + '(' + getTaintedName(obj) + ')';
-			return taint(opFunc(obj), name);
+			return taint(opFunc(wrappedObj), name);
 		}
 		return opFunc(obj);
 	};
@@ -117,7 +118,7 @@ var FunctionMockFactory = function(funcName) {
 		if (isObjectTainted(obj) === true) {
 			let name = funcName + '(' + getTaintedName(obj) + ')';
 			obj = getWrappedObject(obj);
-			return buildProxy(func(obj), name);
+			return taint(func(obj), name);
 		}
 		return func(obj);
 	};
@@ -151,11 +152,17 @@ var EqualityOperatorMockFactory = function(op) {
 	return resultFunc;
 };
 
+/**
+ * Builds mocks for member access operators (. and [])
+ * @function MemberOperatorMockFactory
+ * @param {string} op - unused, just to conform to MockFactory interface
+ * @return - The mock. 
+ */
 var MemberOperatorMockFactory = function(op) {
 	let resultFunc = function(object, property) {
 		let val = object[property];
 		if (isObjectTainted(object)) {
-			if (val !== undefined && val!== null) {
+			if (val !== undefined && val !== null) {
 				let newName = `${getTaintedName(object)}.${property}`;
 				val = taint(val, newName); 
 			}
@@ -164,6 +171,24 @@ var MemberOperatorMockFactory = function(op) {
 	};
 	markAsMocked(resultFunc);
 	return resultFunc;
+};
+
+/**
+ * Builds the mock for member functions calls (e.g. x.f())
+ * @function buildMemberFunctionMock
+ * @return - The mock.
+ */
+var buildMemberFunctionMock = function() {
+	let func = function(obj, name) {
+		let args = Array.from(arguments).slice(2);
+		let res = obj[name].apply(obj, args);
+		if (isObjectTainted(obj)) {
+			res = taint(res);
+		}
+		return res;
+	};
+	markAsMocked(func);
+	return func;
 };
 
 /**
@@ -201,6 +226,7 @@ var mapMocksToObject = function(obj) {
 		let mock = factory(name);
 		obj[replacerNames[name]] = mock;
 	}
+	obj[memberFunctionCallName] = buildMemberFunctionMock();
 };
 
 var functionDefToCode = require('misc').functionDefToCode;

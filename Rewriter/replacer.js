@@ -9,7 +9,7 @@
  * To do it we need to parse the code into an ast, and replace all
  * the nodes that represent the === operator with nodes that represent 
  * a call to the mock function.
- * This is when replacer come to action - they store the info about 
+ * This is when replacers come to action - they store the info about 
  * what nodes shall be replaced, and how they shall be replaced.
  *@module replacer 
  */
@@ -26,9 +26,10 @@ var Syntax = {
 	Literal: 'Literal',
 };
 
+var memberFunctionCallName = '__call__';
 var memberOperatorNames = {
-	'.'     : '__dot__',
-	'[]'    : '__dot__',
+	'.'     : '__get__',
+	'[]'    : '__get__',
 };
 
 var unaryOperatorNames = {
@@ -246,6 +247,60 @@ var FunctionReplacerFactory = function(func, funcReplacerName) {
 	return replacer;
 };	
 
+/**
+ * Transforms x.a, x['a'], x[a] to x[smth] form
+ * @function parseNodeProperty
+ */
+var parseNodeProperty = function(node) {
+	//   expr | node.computed | node.property === Literal | node.property === Identifier
+	// -------------------------------------------------------------------------------
+	// x.a    |    false      |            false          |           true
+	// x[a]   |    true       |            false          |           true
+	// x['a'] |    true       |            true           |          false
+	// -------------------------------------------------------------------------------
+	// x.a -> x['a']
+	// x[a] -> x[a]
+	// x['a'] -> x['a']
+	let newProperty = node.property;
+	if (node.computed === false) {
+		newProperty = {
+			'type': Syntax.Literal,
+			'value': node.property.name,
+			'raw': node.property.name,
+		};
+	}
+	return newProperty;
+};
+
+/**
+ * Replaces x.f(args) with __call__(x, 'f', args).
+ * There is a possible conflict with MemberOperatorReplacers, because
+ * x.f() node contains in it a MemberExpression (x.f) which can be 
+ * rewritten is MemberOperatorReplacer. Now the conflict is avoided
+ * because the whole CallExpression node is rewritten completely 
+ * (in such way that there is no MemberExpression inside it) before
+ * any of its children gets parsed. 
+ */
+var memberFunctionCallReplacer = function() { return new Replacer(
+	function(node) {
+		return node.type === Syntax.CallExpression && node.callee.type === Syntax.MemberExpression;
+	},
+	function(node) {
+		let oldArgs = node.arguments;
+		let newProperty = parseNodeProperty(node.callee);
+		let newArgs = [node.callee.object, newProperty].concat(oldArgs);
+		node.callee = {
+			"name": memberFunctionCallName,
+			"type": Syntax.Identifier,
+		};
+		node.arguments = newArgs;
+		return node;
+	});
+};
+
+/**
+ * Replaces x[a], x['a'] and x.a with __get__(x, 'a')
+ */
 var MemberOperatorReplacerFactory = function(op, opReplacerName) {
 	let replacer = new Replacer(
 			function(node) {
@@ -257,26 +312,10 @@ var MemberOperatorReplacerFactory = function(op, opReplacerName) {
 					'type': Syntax.Identifier,
 					'name': opReplacerName,
 				};
-				let newProperty = node.property;
-				// expr | node.computed | node.property === Literal | node.property === Identifier
-				// -------------------------------------------------------------------------------
-				//x.a   |    false      |            false          |           true
-				//x[a]  |    true       |            false          |           true
-				//x['a']|    true       |            true           |          false
-				// -------------------------------------------------------------------------------
-				// x.a -> x['a']
-				// x[a] -> x[a]
-				// x['a'] -> x['a']
-				if (node.computed === false) {
-					newProperty = {
-						'type': Syntax.Literal,
-						'value': node.property.name,
-						'raw': node.property.name,
-					};
-				}
+				let newProperty = parseNodeProperty(node);
 				node.arguments = [
 					node.object,
-					newProperty,	
+					newProperty,
 				];
 				return node;
 			});
@@ -291,7 +330,7 @@ var createAllReplacers = function() {
 		'unary'    : unaryOperatorNames,
 		'binary'   : binaryOperatorNames,
 		'equality' : equalityOperatorNames,
-		// 'function' : functionNames,
+		'function' : functionNames,
 		'member': memberOperatorNames,
 	};
 	let factories = {
@@ -299,7 +338,7 @@ var createAllReplacers = function() {
 		'binary'   : BinaryOperatorReplacerFactory,
 		// // equality operators is created using the same factory as the binary ones
 		'equality' : BinaryOperatorReplacerFactory,
-		// 'function' : FunctionReplacerFactory,
+		'function' : FunctionReplacerFactory,
 		'member': MemberOperatorReplacerFactory,
 		
 	};
@@ -316,7 +355,7 @@ var createAllReplacers = function() {
 			replacers.push(replacer);
 		}
 	}
-	
+	replacers.push(memberFunctionCallReplacer());
 	return replacers;
 };
 
@@ -329,6 +368,7 @@ var arrayImports = [
 	"equalityOperatorNames",
 	"functionNames",
 	"replacerNames",
+	"memberFunctionCallName",
 ];
 var funcImports = [
 	"isUnaryOperator",
@@ -341,6 +381,7 @@ var funcImports = [
 	"BinaryOperatorReplacerFactory",
 	"FunctionReplacerFactory",
 	"MemberOperatorReplacerFactory",
+	"memberFunctionCallReplacer",
 	"createAllReplacers",
 ];
 
@@ -363,4 +404,5 @@ exports.isBinaryOperator = isBinaryOperator;
 exports.isFunction = isFunction;
 exports.isEqualityOperator = isEqualityOperator;
 exports.isMemberOperator = isMemberOperator;
+exports.memberFunctionCallName = memberFunctionCallName;
 exports.importCode = importCode;

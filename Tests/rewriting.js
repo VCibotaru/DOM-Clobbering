@@ -68,14 +68,14 @@ var memberFunctionsTest = new TestCase(
 	   'Member function rewriting',
 		function() {
 	 		let code = "" +
-			"var a = 'string'.slice(1, 3);" +
+			"var a = 'string'.slice(1, 3).slice(1);" +
 			"var obj = {'f': function(){return this.asd;}, 'asd': 'asd'};" +
 			"var b = obj.f();" +
 			"var func = obj.f;" +
 			"var c = func(); " +
 			"";
 			eval(rewrite(code));
-			return (__triple_equal__(a, 'tr') && __triple_equal__(b, 'asd') &&
+			return (__triple_equal__(a, 'r') && __triple_equal__(b, 'asd') &&
 					__triple_equal__(c, undefined));
 		},
 		true

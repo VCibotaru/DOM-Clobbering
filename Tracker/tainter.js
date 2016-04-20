@@ -56,17 +56,40 @@ var storage = new TaintedStorage();
 var isObjectTaintedKey = '__is_tainted__';
 var taintedNameKey = '__tainted_name__';
 var isWrapperKey = '__is_wrapper__';
+var wrappedObjectKey = '__wrapped_object__';
 
 var taint = function(obj, name) {
-	// TODO: add support for function
+	if (isObjectTainted(obj)) {
+		return obj;
+	}
 	types = {
 		'string'  : String,
 		'number'  : Number,
 		'boolean' : Boolean,
 	};
+	let oldObj = obj;
 	if ((typeof obj) in types) {
 		obj = new types[typeof obj](obj);
 		obj[isWrapperKey] = true;
+		obj[wrappedObjectKey] = oldObj;
+	} else if (typeof obj === 'function') {
+		// let decorator = function() {
+		// 	let res = oldObj.apply(this, arguments);
+		// 	console.log(this);
+		// 	return taint(res, getTaintedName(oldObj) + `(${arguments})`);
+		// };
+		let decorator = new Proxy(oldObj, {
+			apply: function(target, thisArg, argsList) {
+				console.log(thisArg);
+				let wrappedFunc = getWrappedObject(target);
+				let res = wrappedFunc.apply(thisArg, argsList);
+				let newName = `${getTaintedName(target)}(${argsList})`;
+				return taint(res, newName);
+			}
+		});
+		decorator[isWrapperKey] = true;
+		decorator[wrappedObjectKey] = oldObj;
+		obj = decorator;
 	}
 	obj[isObjectTaintedKey] = true;
 	obj[taintedNameKey] = name;
@@ -75,6 +98,9 @@ var taint = function(obj, name) {
 };
 
 var isObjectTainted = function(obj) {
+	if (obj === undefined || obj === null) {
+		return false;
+	}
 	return (obj[isObjectTaintedKey] === true);
 };
 
@@ -90,7 +116,7 @@ var getWrappedObject = function(obj) {
 	if (isWrapper(obj) === false) {
 		return obj;
 	}
-	return obj.valueOf();
+	return obj[wrappedObjectKey];
 };
 
 var importCode = "";
