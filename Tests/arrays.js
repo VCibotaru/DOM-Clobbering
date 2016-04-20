@@ -1,4 +1,5 @@
 var TestCase = require('./tests').TestCase;
+var rewrite = require('rewriter').rewrite;
 
 require('mocks').mapMocksToObject(this);
 // require('prototype-rewriter').rewritePrototypes(this);
@@ -17,7 +18,10 @@ var accessTest = new TestCase(
 		'Array element access',
 		function() {
 			let pr = this.taint(['foo', 'bar']);
-			let x = pr[0];
+			let code = "" +
+			"let x = pr[0];" +
+			"";
+			eval(rewrite(code));
 			return this.isObjectTainted(x);
 		},
 		true
@@ -36,7 +40,10 @@ var joinTest = new TestCase(
 		'Array join function',
 		function() {
 			let pr = this.taint(['foo', 'bar']);
-			let x = pr.join(',');	
+			let code = "" +
+			"let x = pr.join(',');	" +
+			"";
+			eval(rewrite(code));
 			return this.isObjectTainted(x) && __triple_equal__(x, 'foo,bar');
 		},
 		true

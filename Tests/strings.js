@@ -73,8 +73,8 @@ var plusTest = new TestCase(
 var evalTest = new TestCase(
 		'Strings eval()',
 		function() {
+			let x = this.taint('2+2');
 			let code = "" +
-			"let x = this.taint('2+2');" +
 			"eval(x);" +
 			"";
 			let newCode = rewrite(code);
@@ -86,8 +86,11 @@ var evalTest = new TestCase(
 var sliceTest = new TestCase(
 		'Strings slice()',
 		function() {
-			let pr = this.taint('foobar');
-			let x = pr.slice(0, 3);
+			var pr = this.taint('foobar', 'base');
+			let code = "" +
+			"let x = pr.slice(0,3);" +
+			"";
+			eval(rewrite(code));
 			return __triple_equal__(x, 'foo') && this.isObjectTainted(x);
 		},
 		true
@@ -97,7 +100,10 @@ var splitTest = new TestCase(
 		'Strings split()',
 		function() {
 			let pr = this.taint('Foo. Bar.');
-			let x = pr.split('.');
+			let code = "" + 
+			"let x = pr.split('.');" +
+			"";
+			eval(rewrite(code));
 			return this.isObjectTainted(x);
 		},
 		true
