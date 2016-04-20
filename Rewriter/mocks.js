@@ -162,10 +162,8 @@ var MemberOperatorMockFactory = function(op) {
 	let resultFunc = function(object, property) {
 		let val = object[property];
 		if (isObjectTainted(object)) {
-			if (val !== undefined && val !== null) {
-				let newName = `${getTaintedName(object)}.${property}`;
-				val = taint(val, newName); 
-			}
+			let newName = `${getTaintedName(object)}.${property}`;
+			val = taint(val, newName); 
 		}
 		return val;
 	};
@@ -181,7 +179,14 @@ var MemberOperatorMockFactory = function(op) {
 var buildMemberFunctionMock = function() {
 	let func = function(obj, name) {
 		let args = Array.from(arguments).slice(2);
-		let res = obj[name].apply(obj, args);
+		try {
+			let res = obj[name].apply(obj, args);
+		}
+		catch(e) {
+			let text = "Exception occured at calling function: '" + name + "'!";
+			console.log(text);
+			throw e;
+		}
 		if (isObjectTainted(obj)) {
 			// conservative strategy - always taint the result
 			let newName = getTaintedName(obj) + '.' + name + `(${args})`;

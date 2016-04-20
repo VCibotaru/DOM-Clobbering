@@ -59,6 +59,10 @@ var isWrapperKey = '__is_wrapper__';
 var wrappedObjectKey = '__wrapped_object__';
 
 var taint = function(obj, name) {
+	if (obj === undefined || obj === null) {
+		console.log('Tried to access an invalid value: ' + name + ' is ' + obj);
+		return obj;
+	}	   
 	if (isObjectTainted(obj)) {
 		return obj;
 	}
