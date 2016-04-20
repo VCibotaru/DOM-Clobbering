@@ -109,12 +109,14 @@ importFuncs = [
 	'isObjectTainted',
 	'isWrapper',
 	'getTaintedName',
+	'getWrappedObject',
 ];
 
 importStrings = [
 	'isObjectTaintedKey',
 	'isWrapperKey',
 	'taintedNameKey',
+	'wrappedObjectKey',
 ];
 
 functionDefToCode = require('misc').functionDefToCode;

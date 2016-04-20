@@ -184,7 +184,8 @@ var buildMemberFunctionMock = function() {
 		let res = obj[name].apply(obj, args);
 		if (isObjectTainted(obj)) {
 			// conservative strategy - always taint the result
-			res = taint(res);
+			let newName = getTaintedName(obj) + '.' + name + `(${args})`;
+			res = taint(res, newName);
 		}
 		return res;
 	};
@@ -241,7 +242,9 @@ var funcImports = [
 	"UnaryOperatorMockFactory",
 	"BinaryOperatorMockFactory",
 	"EqualityOperatorMockFactory",
+	"MemberOperatorMockFactory",
 	"FunctionMockFactory",
+	"buildMemberFunctionMock",
 	"mapMocksToObject",
 ];
 

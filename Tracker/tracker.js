@@ -5,9 +5,11 @@
 var DebuggerWrapper = require('debugger-wrapper').DebuggerWrapper;
 var config = require('config');
 var	logger = require('logger');
-var proxy = require('proxy');
+// var proxy = require('proxy');
+var tainter = require('tainter');
 var replacer = require('replacer');
 var mocks = require('mocks');
+
 var rewritePrototypes = require('prototype-rewriter');
 /**
  * Tracks the creation of required element and links the Debugger with the Tainter.
@@ -29,12 +31,12 @@ var Tracker = function(win) {
 };
 
 Tracker.prototype.initBrowserContext = function() {
-	this.win.eval(this.markFrameCode(proxy.importCode));
+	this.win.eval(this.markFrameCode(tainter.importCode));
 	this.win.eval(this.markFrameCode(replacer.importCode));
 	this.win.eval(this.markFrameCode(mocks.importCode));
 	this.win.eval(this.markFrameCode("this.mapMocksToObject(this);"));
-	this.win.eval(this.markFrameCode(rewritePrototypes.importCode));
-	this.win.eval(this.markFrameCode("this.rewritePrototypes(this);"));
+	// this.win.eval(this.markFrameCode(rewritePrototypes.importCode));
+	// this.win.eval(this.markFrameCode("this.rewritePrototypes(this);"));
 };
 
 /**
@@ -102,8 +104,9 @@ Tracker.prototype.shouldRewriteFrame = function(frame) {
  */
 Tracker.prototype.isElementCreated = function() {
 	if (config.xpath) {
-		return (this.win.document.evaluate(config.xpath, this.win.document, null,
-				   XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue !== undefined);
+		let res = (this.win.document.evaluate(config.xpath, this.win.document, null,
+				   XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue);
+		return res !== null;
 	}
 	return true;
 };
@@ -178,8 +181,8 @@ Tracker.prototype.startTaint = function() {
 			"var element = document.evaluate('" + 
 			xpath +
 			"' , document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;" +
-			"document." + name + " = " +
-			"buildProxy(element, 'base');" +
+			"element.name = '" + name + "';" + 
+			"element = taint(element, '" + name + "');" +
 			"";	
 	}
 	logger.debugLog('Code executed at start of taint:');

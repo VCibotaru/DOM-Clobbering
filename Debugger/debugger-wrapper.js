@@ -20,9 +20,6 @@ var DebuggerWrapper = function (tracker, win) {
 	this.dbg = new Debugger();
 	this.win = win;
 
-	// Save a pointer to this. It'll be used later.
-	var self = this;
-
 	this.elementCreated = false;
 
 	this.dbg.onEnterFrame = DebuggerWrapper.prototype.onEnterFrame.bind(this);

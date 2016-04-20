@@ -23,5 +23,6 @@ else {
 		tracker = new Tracker(win);
 	});
 	webpage.open(config.url, function() {
+		console.log(tracker.getResults());
 	});
 }
