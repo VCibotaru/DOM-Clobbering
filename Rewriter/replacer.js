@@ -274,6 +274,8 @@ var parseNodeProperty = function(node) {
 
 /**
  * Replaces x.f(args) with __call__(x, 'f', args).
+ * This whole workaround is needed to correctly pass the this value
+ * to member functions calls.
  * There is a possible conflict with MemberOperatorReplacers, because
  * x.f() node contains in it a MemberExpression (x.f) which can be 
  * rewritten is MemberOperatorReplacer. Now the conflict is avoided
@@ -300,6 +302,7 @@ var memberFunctionCallReplacer = function() { return new Replacer(
 
 /**
  * Replaces x[a], x['a'] and x.a with __get__(x, 'a')
+ * This is needed to create custom getters for tainted objects.
  */
 var MemberOperatorReplacerFactory = function(op, opReplacerName) {
 	let replacer = new Replacer(

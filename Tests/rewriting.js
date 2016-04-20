@@ -73,10 +73,12 @@ var memberFunctionsTest = new TestCase(
 			"var b = obj.f();" +
 			"var func = obj.f;" +
 			"var c = func(); " +
+			"var func = func.bind(obj);" +
+			"var d = func();" + 
 			"";
 			eval(rewrite(code));
 			return (__triple_equal__(a, 'r') && __triple_equal__(b, 'asd') &&
-					__triple_equal__(c, undefined));
+					__triple_equal__(c, undefined) && __triple_equal__(d, 'asd'));
 		},
 		true
 );
