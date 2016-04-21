@@ -81,17 +81,17 @@ var BinaryOperatorMockFactory = function(op) {
 			left = getWrappedObject(left); 
 		}
 		else {
-			leftName = 'value(' + left.toString() + ')';
+			leftName = left.toString(); 
 		}
 		if (r === true) {
 			rightName = getTaintedName(right);
 			right = getWrappedObject(right); 
 		}
 		else {
-			rightName = 'value(' + right.toString() + ')';
+			rightName = right.toString(); 
 		}
 		if (l === true || r === true) {
-			let name = op + '(' + leftName + ',' + rightName + ')';
+			let name = op + '(' + leftName + ', ' + rightName + ')';
 			return taint(opFunc(left,right), name);
 		}
 		return opFunc(left, right);
@@ -179,8 +179,9 @@ var MemberOperatorMockFactory = function(op) {
 var buildMemberFunctionMock = function() {
 	let func = function(obj, name) {
 		let args = Array.from(arguments).slice(2);
+		let res;
 		try {
-			let res = obj[name].apply(obj, args);
+			res = obj[name].apply(obj, args);
 		}
 		catch(e) {
 			let text = "Exception occured at calling function: '" + name + "'!";
