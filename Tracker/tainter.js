@@ -105,8 +105,6 @@ var getWrappedObject = function(obj) {
 	return obj[wrappedObjectKey];
 };
 
-var importCode = "";
-
 importFuncs = [
 	'TaintedStorage',
 	'taint',
@@ -123,17 +121,7 @@ importStrings = [
 	'wrappedObjectKey',
 ];
 
-functionDefToCode = require('misc').functionDefToCode;
-variableDefToCode = require('misc').variableDefToCode;
-
-for (let func of importFuncs) {
-	importCode += functionDefToCode(this[func], func);
-}
-
-for (let string of importStrings) {
-	importCode += variableDefToCode(this[string], string);
-}
-
+var importCode = require('misc').buildModuleCode(this, importFuncs, importStrings);
 importCode += "var storage = new TaintedStorage();";
 importCode += "" +
 "var clearTaintedObjects = TaintedStorage.prototype.clearTaintedObjects.bind(storage);" +

@@ -27,5 +27,24 @@ var functionDefToCode = function(value, name) {
 	return code;
 };
 
+/**
+ * Builds a module's code for importing into other modules via eval.
+ * @function buildModuleCode
+ * @param {object} funcs - a dictionary of module's functions: {functionName: function}
+ * @param {object} vars  - a dictionary of module's variables: {variableName: variable}
+ * @return - A string representing the module's code
+ */
+var buildModuleCode = function(module, funcNames, varNames) {
+	let importCode = "";
+	for (let funcName of funcNames) {
+		importCode += functionDefToCode(module[funcName], funcName);
+	}
+	for (let varName of varNames) {
+		importCode += variableDefToCode(module[varName], varName);
+	}
+	return importCode;
+};
+
 exports.functionDefToCode = functionDefToCode;
 exports.variableDefToCode = variableDefToCode;
+exports.buildModuleCode = buildModuleCode;

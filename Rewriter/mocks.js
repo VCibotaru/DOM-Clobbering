@@ -237,11 +237,11 @@ var mapMocksToObject = function(obj) {
 	obj[memberFunctionCallName] = buildMemberFunctionMock();
 };
 
-var functionDefToCode = require('misc').functionDefToCode;
-var variableDefToCode = require('misc').variableDefToCode;
-var importCode = "";
 
-importCode += variableDefToCode(mockFunctionKey, "mockFunctionKey");
+var stringImports = [
+	"mockFunctionKey",
+];
+
 var funcImports = [
 	"markAsMocked",
 	"isMarkedAsMocked",
@@ -254,9 +254,7 @@ var funcImports = [
 	"mapMocksToObject",
 ];
 
-for (let i of funcImports) {
-	importCode += functionDefToCode(this[i], i);
-}
+var importCode = require('misc').buildModuleCode(this, funcImports, stringImports);
 
 exports.importCode = importCode;
 exports.mapMocksToObject = mapMocksToObject;

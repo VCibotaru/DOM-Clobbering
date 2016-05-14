@@ -218,11 +218,6 @@ var getWrappedObject = function(pr) {
 	return pr[wrappedObjectKey];
 };
 
-var variableDefToCode = require('misc').variableDefToCode;
-var functionDefToCode = require('misc').functionDefToCode;
-
-// the code which if evaled imports the whole module
-var importCode = "";
 var stringImports = [
 	"stringValueKey", 
 	"objectNameKey", 
@@ -237,14 +232,7 @@ var funcImports = [
 	"getTaintedName",
 ];
 
-for (let i of stringImports) {
-	importCode += variableDefToCode(this[i], i);
-}
-
-for (let i of funcImports) {
-	importCode += functionDefToCode(this[i], i);
-}
-
+var importCode = require('misc').buildModuleCode(this, funcImports, stringImports);
 importCode += "var storage = new ProxyStorage();";
 importCode += "" +
 "var isObjectTainted = ProxyStorage.prototype.isObjectTainted.bind(storage);" +

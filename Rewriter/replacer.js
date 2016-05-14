@@ -362,7 +362,6 @@ var createAllReplacers = function() {
 	return replacers;
 };
 
-var importCode = "";
 var arrayImports = [
 	"Syntax",
 	"memberOperatorNames",
@@ -388,15 +387,7 @@ var funcImports = [
 	"createAllReplacers",
 ];
 
-var functionDefToCode = require('misc').functionDefToCode;
-var variableDefToCode = require('misc').variableDefToCode;
-
-for (let i of arrayImports) {
-	importCode += variableDefToCode(this[i], i);
-}
-for (let i of funcImports) {
-	importCode += functionDefToCode(this[i], i);
-}
+var importCode = require('misc').buildModuleCode(this, funcImports, arrayImports);
 importCode += "var replacers = createAllReplacers();";
 
 /** The array containing all replacers*/

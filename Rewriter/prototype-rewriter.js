@@ -63,18 +63,12 @@ var rewritePrototypes = function(obj) {
 	}
 };
 
-var importCode = "";
-var functionDefToCode = require('misc').functionDefToCode;
-
 var importFuncs = [
 	"replaceArrayIndexOf",
 	"rewritePrototypes",
 ];
 
-for (let f of importFuncs) {
-	importCode += functionDefToCode(this[f], f);
-}
-
+var importCode = require('misc').buildModuleCode(this, importFuncs, []);
 
 exports.rewritePrototypes = rewritePrototypes;
 exports.importCode = importCode;
