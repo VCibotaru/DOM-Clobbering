@@ -2,8 +2,19 @@
  * @module logger
  */
 
-var DEBUG = require('config').DEBUG;
+var config = require('config');
+var DEBUG = config.DEBUG;
+var noColor = config.noColor;
+
 var colors = require('colors');
+if (noColor) {
+	let tmp = function(msg) {return msg;};
+	colors = {
+		'red': tmp,
+		'green': tmp
+	};
+}
+
 var logger = {
 	debugLog : function(msg) {
 				   if (DEBUG) {

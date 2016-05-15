@@ -34,6 +34,11 @@ var Config = function() {
 		this.names = this.names.concat(builtInNames);
 	}
 
+	// defined for no colors mode
+	if (conf.no_color !== undefined) {
+		this.noColor = true;
+	}
+
 	// true for unit tests mode, false/undefined for normal mode
 	this.testMode = conf.test;
 
