@@ -43,7 +43,7 @@ Tracker.prototype.initBrowserContext = function() {
  * Returns the results of taint analysis.
  * @method
  * @this Tracker
- * @return - an array of tainted names
+ * @return - a pretty formatted results string.
  */
 Tracker.prototype.getResults = function() {
 	let code = this.markFrameCode('storage.getTaintedNames()');
@@ -58,6 +58,19 @@ Tracker.prototype.getResults = function() {
 	}
 	str += '===============================';
 	return str;	
+};
+
+/**
+ * Returns the array of tainted names.
+ * @method
+ * @this Tracker
+ * @return - an array.
+ */
+Tracker.prototype.getTaintedNames = function() {
+	let code = this.markFrameCode('storage.getTaintedNames()');
+	let result = this.win.eval(code);
+	let names = Set(result);
+	return Array.from(names);
 };
 
 var mockFunctionKey = require('mocks').mockFunctionKey;
@@ -103,12 +116,9 @@ Tracker.prototype.shouldRewriteFrame = function(frame) {
  * @return - a boolean value.
  */
 Tracker.prototype.isElementCreated = function() {
-	if (config.xpath) {
-		let res = (this.win.document.evaluate(config.xpath, this.win.document, null,
-				   XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue);
-		return res !== null;
-	}
-	return true;
+	let res = (this.win.document.evaluate(config.xpath, this.win.document, null,
+				XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue);
+	return res !== null;
 };
 
 /**
@@ -120,9 +130,6 @@ Tracker.prototype.isElementCreated = function() {
  */ 
 
 Tracker.prototype.shouldStartTaint = function() {
-	if (config.taintAtStart) {
-		return (this.taintStarted === false);
-	} 
 	return (this.taintStarted === false && this.isElementCreated() === true);
 };
 
@@ -134,9 +141,6 @@ Tracker.prototype.shouldStartTaint = function() {
  * @return - a boolean value
  */
 Tracker.prototype.shouldTaint = function() {
-	if (config.taintAtStart === true) {
-		return true;
-	}
 	this.elementCreated = this.elementCreated || (this.isElementCreated() === true);
 	return this.elementCreated;
 };
@@ -171,23 +175,17 @@ Tracker.prototype.isFrameCodeMarked = function(code) {
 
 Tracker.prototype.startTaint = function() {
 	this.taintStarted = true;
-	let name = config.elementName;
-	let code;
-	if (config.taintStartCode) {
-		code = config.taintStartCode;
-	} else {
-		let xpath = config.xpath;
-		code = "" +
-			"var element = document.evaluate('" + 
-			xpath +
-			"' , document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;" +
-			"element.name = '" + name + "';" + 
-			"element = taint(element, '" + name + "');" +
-			"";	
-	}
+	let name = config.getCurrentName();
+	let xpath = config.xpath;
+	let code = "" +
+		"var element = document.evaluate('" + 
+		xpath +
+		"' , document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;" +
+		"element.name = '" + name + "';" + 
+		"element = taint(element, '" + name + "');" +
+		"";	
 	logger.debugLog('Code executed at start of taint:');
 	logger.debugLog(code);
-	
 	code = this.markFrameCode(code);	
 	this.win.eval(code);
 };

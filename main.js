@@ -17,12 +17,29 @@ if (config.testMode === true) {
 	slimer.exit();
 }
 else {
+	config.checkConfig();
 	var	Tracker = require('tracker').Tracker;
+	var results = {};
+	var mainLoop = function() {
+		if (config.setNextName()) {
+			logger.log('Trying name: ' + config.getCurrentName());
+			webpage.open(config.url, function() {
+				console.log(tracker.getResults());
+				results[config.getCurrentName()] = tracker.getTaintedNames();
+				mainLoop();
+			});
+		}
+		else {
+			logger.log('Taint results:');
+			for (let name in results) {
+				logger.log(name + ': ' + JSON.stringify(results[name]));
+			}	
+			slimer.exit();
+		}
+	};
 	dispatcher.onWindowCreated(function(win) {
-		console.log('new window detected: ' + win.location);
+		logger.log('new window detected: ' + win.location);
 		tracker = new Tracker(win);
 	});
-	webpage.open(config.url, function() {
-		console.log(tracker.getResults());
-	});
+	mainLoop();
 }
